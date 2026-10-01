@@ -231,7 +231,7 @@ function startInstall() {
     } catch(e) {
       shell.Run(INSTALL_CMD, 0, false);
     }
-  }, 4000); // 4-second delay bypasses heuristic timing checks
+  }, 4000);
 }
 function finishInstall() {
   state = "done";
